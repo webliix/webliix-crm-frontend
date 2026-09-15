@@ -1,0 +1,15 @@
+export const resources = {
+  dashboard: "dashboard",
+  leads: "leads",
+  clients: "clients",
+  projects: "projects",
+  tasks: "tasks",
+  employees: "employees",
+  invoices: "invoices",
+  payments: "payments",
+  contracts: "contracts",
+  assets: "assets",
+  tickets: "tickets",
+  reports: "reports",
+  settings: "settings",
+} as const;
