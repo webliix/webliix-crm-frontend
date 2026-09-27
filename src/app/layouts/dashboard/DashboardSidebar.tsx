@@ -45,8 +45,8 @@ export function DashboardSidebar({ mobileOpen = false, onMobileClose }: Dashboar
           src={WEBLIIX_LOGO_URL}
           alt="Webliix Logo"
           sx={{
-            height: 36,
-            maxHeight: 36,
+            height: 42,
+            maxHeight: 42,
             objectFit: "contain",
             borderRadius: tokens.borderRadius.xs,
           }}

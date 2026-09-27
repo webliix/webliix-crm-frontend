@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "generate:api": "openapi-typescript-codegen --input http://localhost:8082/v3/api-docs --output src/api/generated",
+    "generate:api": "openapi-typescript-codegen --input https://webliix-crm-backend.onrender.com/v3/api-docs --output src/api/generated",
     "lint": "eslint .",
     "preview": "vite preview"
   },

@@ -4,8 +4,10 @@ import { sessionService } from "@/shared/security/session.service";
 import { mapApiError } from "@/shared/errors/mapApiError";
 import { errorHandler } from "@/shared/errors/errorHandler";
 
+const cleanBaseUrl = (env.apiBaseUrl || "https://webliix-crm-backend.onrender.com").trim().replace(/\/+$/, "");
+
 export const http = axios.create({
-  baseURL: env.apiBaseUrl,
+  baseURL: cleanBaseUrl,
   timeout: 30000,
   headers: {
     "Content-Type": "application/json",

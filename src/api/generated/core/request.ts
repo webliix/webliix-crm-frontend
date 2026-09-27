@@ -93,7 +93,10 @@ const getUrl = (config: OpenAPIConfig, options: ApiRequestOptions): string => {
             return substring;
         });
 
-    const url = `${config.BASE}${path}`;
+    let baseUrl = (config.BASE || "https://webliix-crm-backend.onrender.com").trim().replace(/\/+$/, "");
+    const cleanPath = path.startsWith('/') ? path : `/${path}`;
+
+    const url = `${baseUrl}${cleanPath}`;
     if (options.query) {
         return `${url}${getQueryString(options.query)}`;
     }
