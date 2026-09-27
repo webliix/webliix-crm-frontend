@@ -1,5 +1,8 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import LoginPage from "@/modules/auth/pages/LoginPage";
+import ForgotPasswordPage from "@/modules/auth/pages/ForgotPasswordPage";
+import RegisterPage from "@/modules/auth/pages/RegisterPage";
+import VerifyEmailPage from "@/modules/auth/pages/VerifyEmailPage";
 import DashboardPage from "@/modules/dashboard/pages/DashboardPage";
 import LeadCreatePage from "@/modules/leads/pages/LeadCreatePage";
 import LeadEditPage from "@/modules/leads/pages/LeadEditPage";
@@ -35,6 +38,7 @@ export function AppRouter() {
         <Route path="/blog" element={<PublicBlogListingPage />} />
         <Route path="/blog/:slug" element={<PublicBlogReaderPage />} />
 
+        {/* Authentication Routes */}
         <Route
           path="/login"
           element={
@@ -43,6 +47,31 @@ export function AppRouter() {
             </AuthLayout>
           }
         />
+        <Route
+          path="/forgot-password"
+          element={
+            <AuthLayout>
+              <ForgotPasswordPage />
+            </AuthLayout>
+          }
+        />
+        <Route
+          path="/register"
+          element={
+            <AuthLayout>
+              <RegisterPage />
+            </AuthLayout>
+          }
+        />
+        <Route
+          path="/verify-email"
+          element={
+            <AuthLayout>
+              <VerifyEmailPage />
+            </AuthLayout>
+          }
+        />
+
         <Route
           path="/403"
           element={

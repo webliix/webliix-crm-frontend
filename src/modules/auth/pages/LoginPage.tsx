@@ -1,11 +1,15 @@
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Navigate } from "react-router-dom";
+import { Navigate, Link } from "react-router-dom";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import InputAdornment from "@mui/material/InputAdornment";
+import IconButton from "@mui/material/IconButton";
 import EmailOutlinedIcon from "@mui/icons-material/EmailOutlined";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
+import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
+import VisibilityOffOutlinedIcon from "@mui/icons-material/VisibilityOffOutlined";
 import { loginSchema, type LoginFormData } from "@/modules/auth/validations/login.schema";
 import { AppButton, AppCard, AppTextField } from "@/shared/components/ui";
 import { useLogin } from "@/modules/auth/hooks/useLogin";
@@ -15,6 +19,7 @@ import { tokens } from "@/theme/tokens";
 
 export default function LoginPage() {
   const { accessToken, authenticated } = useAppSelector(selectAuth);
+  const [showPassword, setShowPassword] = useState(false);
   const { register, handleSubmit, formState } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
   });
@@ -84,12 +89,24 @@ export default function LoginPage() {
             </Box>
 
             <Box>
-              <Typography variant="caption" fontWeight={600} color={tokens.colors.secondary[700]} sx={{ mb: 0.75, display: "block" }}>
-                Password
-              </Typography>
+              <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 0.75 }}>
+                <Typography variant="caption" fontWeight={600} color={tokens.colors.secondary[700]}>
+                  Password
+                </Typography>
+                <Typography
+                  component={Link}
+                  to="/forgot-password"
+                  variant="caption"
+                  fontWeight={600}
+                  color={tokens.colors.primary.main}
+                  sx={{ textDecoration: "none", "&:hover": { textDecoration: "underline" } }}
+                >
+                  Forgot Password?
+                </Typography>
+              </Box>
               <AppTextField
                 placeholder="••••••••"
-                type="password"
+                type={showPassword ? "text" : "password"}
                 {...register("password")}
                 error={!!formState.errors.password}
                 helperText={formState.errors.password?.message as any}
@@ -97,6 +114,22 @@ export default function LoginPage() {
                   startAdornment: (
                     <InputAdornment position="start">
                       <LockOutlinedIcon sx={{ fontSize: 18, color: tokens.colors.secondary[400] }} />
+                    </InputAdornment>
+                  ),
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        size="small"
+                        onClick={() => setShowPassword(!showPassword)}
+                        edge="end"
+                        aria-label="toggle password visibility"
+                      >
+                        {showPassword ? (
+                          <VisibilityOffOutlinedIcon sx={{ fontSize: 18, color: tokens.colors.secondary[400] }} />
+                        ) : (
+                          <VisibilityOutlinedIcon sx={{ fontSize: 18, color: tokens.colors.secondary[400] }} />
+                        )}
+                      </IconButton>
                     </InputAdornment>
                   ),
                 }}
@@ -116,6 +149,22 @@ export default function LoginPage() {
             </AppButton>
           </Box>
         </form>
+
+        <Box sx={{ textAlign: "center", mt: 3, pt: 2, borderTop: `1px solid ${tokens.colors.secondary[100]}` }}>
+          <Typography variant="caption" color="text.secondary">
+            Don&apos;t have an account?{" "}
+            <Typography
+              component={Link}
+              to="/register"
+              variant="caption"
+              fontWeight={700}
+              color={tokens.colors.primary.main}
+              sx={{ textDecoration: "none", "&:hover": { textDecoration: "underline" } }}
+            >
+              Create Account
+            </Typography>
+          </Typography>
+        </Box>
       </AppCard>
     </Box>
   );
