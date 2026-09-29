@@ -37,6 +37,24 @@ export const menuAccess = {
     path: "/tickets",
     permission: permissions.tickets.view,
   },
+  subscribers: {
+    id: "subscribers",
+    label: "Newsletter",
+    path: "/subscribers",
+    permission: permissions.subscribers.view,
+  },
+  reviews: {
+    id: "reviews",
+    label: "Reviews & Feedback",
+    path: "/reviews",
+    permission: permissions.reviews.view,
+  },
+  users: {
+    id: "users",
+    label: "User Accounts",
+    path: "/users",
+    permission: permissions.users.view,
+  },
   reports: {
     id: "reports",
     label: "Reports",

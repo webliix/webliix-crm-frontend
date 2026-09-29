@@ -7,4 +7,7 @@ export const menuItems: NavigationItem[] = [
   menuAccess.customers,
   menuAccess.blogs,
   menuAccess.tickets,
+  menuAccess.subscribers,
+  menuAccess.reviews,
+  menuAccess.users,
 ];

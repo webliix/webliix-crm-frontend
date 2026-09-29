@@ -13,6 +13,9 @@ import PublicBlogListingPage from "@/modules/blog/pages/PublicBlogListingPage";
 import PublicBlogReaderPage from "@/modules/blog/pages/PublicBlogReaderPage";
 import ProfilePage from "@/modules/profile/pages/ProfilePage";
 import TicketListPage from "@/modules/tickets/pages/TicketListPage";
+import SubscriberListPage from "@/modules/newsletter/pages/SubscriberListPage";
+import ReviewListPage from "@/modules/reviews/pages/ReviewListPage";
+import UserListPage from "@/modules/system/pages/UserListPage";
 import { AccessDeniedPage } from "@/modules/system/pages/AccessDeniedPage";
 import { NotFoundPage } from "@/modules/system/pages/NotFoundPage";
 import { ProtectedRoute } from "@/app/router/ProtectedRoute";
@@ -131,6 +134,42 @@ export function AppRouter() {
               <DashboardLayout>
                 <PageGuard permission={routeAccess["/tickets"]}>
                   <TicketListPage />
+                </PageGuard>
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/subscribers"
+          element={
+            <ProtectedRoute>
+              <DashboardLayout>
+                <PageGuard permission={routeAccess["/subscribers"]}>
+                  <SubscriberListPage />
+                </PageGuard>
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/reviews"
+          element={
+            <ProtectedRoute>
+              <DashboardLayout>
+                <PageGuard permission={routeAccess["/reviews"]}>
+                  <ReviewListPage />
+                </PageGuard>
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/users"
+          element={
+            <ProtectedRoute>
+              <DashboardLayout>
+                <PageGuard permission={routeAccess["/users"]}>
+                  <UserListPage />
                 </PageGuard>
               </DashboardLayout>
             </ProtectedRoute>

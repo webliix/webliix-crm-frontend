@@ -7,6 +7,9 @@ export const routeAccess = {
   "/blogs": permissions.blogs.view,
   "/projects": permissions.projects.view,
   "/tickets": permissions.tickets.view,
+  "/subscribers": permissions.subscribers.view,
+  "/reviews": permissions.reviews.view,
+  "/users": permissions.users.view,
   "/reports": permissions.reports.view,
 } as const;
 

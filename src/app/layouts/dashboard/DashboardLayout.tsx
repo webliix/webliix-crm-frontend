@@ -3,7 +3,6 @@ import Box from "@mui/material/Box";
 import { DashboardHeader } from "./DashboardHeader";
 import { DashboardSidebar } from "./DashboardSidebar";
 import { DashboardFooter } from "./DashboardFooter";
-import { WebsiteHelpWidget } from "@/modules/tickets/components/WebsiteHelpWidget";
 
 interface Props {
   children: ReactNode;
@@ -37,9 +36,6 @@ export function DashboardLayout({ children }: Props) {
 
         <DashboardFooter />
       </Box>
-
-      {/* Universal Floating Website Help & Customer Support Chat Widget */}
-      <WebsiteHelpWidget />
     </Box>
   );
 }

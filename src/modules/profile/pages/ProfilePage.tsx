@@ -354,11 +354,13 @@ export default function ProfilePage() {
           >
             <Box sx={{ display: "flex", alignItems: "center", gap: 2.5 }}>
               <Avatar
+                variant="rounded"
                 sx={{
                   width: 76,
                   height: 76,
                   fontSize: "2rem",
                   fontWeight: 800,
+                  borderRadius: tokens.borderRadius.md,
                   backgroundColor: tokens.colors.primary.main,
                   color: "#ffffff",
                   boxShadow: `0 6px 18px ${tokens.colors.primary[300]}`,

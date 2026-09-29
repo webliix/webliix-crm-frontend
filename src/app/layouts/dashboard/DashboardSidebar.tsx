@@ -36,8 +36,8 @@ export function DashboardSidebar({ mobileOpen = false, onMobileClose }: Dashboar
           display: "flex",
           alignItems: "center",
           gap: 1.5,
-          borderBottom: `1px solid ${tokens.colors.secondary[200]}`,
-          bgcolor: "#ffffff",
+          borderBottom: `1px solid ${tokens.colors.primary[100]}`,
+          background: `linear-gradient(135deg, #ffffff 0%, ${tokens.colors.primary[50]} 100%)`,
         }}
       >
         <Box
@@ -45,19 +45,22 @@ export function DashboardSidebar({ mobileOpen = false, onMobileClose }: Dashboar
           src={WEBLIIX_LOGO_URL}
           alt="Webliix Logo"
           sx={{
-            height: 42,
-            maxHeight: 42,
+            height: 40,
+            maxHeight: 40,
             objectFit: "contain",
             borderRadius: tokens.borderRadius.xs,
           }}
         />
         <Box>
-          <Typography variant="subtitle2" fontWeight={800} color={tokens.colors.secondary[900]} lineHeight={1.2}>
+          <Typography variant="subtitle2" fontWeight={800} color={tokens.colors.primary[900]} lineHeight={1.2}>
             Webliix Hub
           </Typography>
-          <Typography variant="caption" color="text.secondary" fontSize="0.6875rem">
-            ERP & CRM Platform
-          </Typography>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mt: 0.2 }}>
+            <Box sx={{ width: 6, height: 6, borderRadius: "50%", bgcolor: tokens.colors.primary.main }} />
+            <Typography variant="caption" color={tokens.colors.primary[700]} fontSize="0.6875rem" fontWeight={600}>
+              Enterprise SaaS
+            </Typography>
+          </Box>
         </Box>
       </Box>
 

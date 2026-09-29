@@ -53,12 +53,36 @@ export const userNotificationApi = {
   },
 
   async getPreferences(userId: number = 1): Promise<BackendNotificationPreference> {
-    const res = await http.get(`/api/v1/notifications/preferences/${userId}`);
-    return res.data?.data ?? {};
+    try {
+      const res = await http.get(`/api/v1/notifications/preferences/${userId}`);
+      return res.data?.data ?? {
+        emailEnabled: true,
+        pushEnabled: true,
+        leadNotifications: true,
+        ticketNotifications: true,
+        invoiceNotifications: true,
+        projectNotifications: true,
+        payrollNotifications: true,
+      };
+    } catch {
+      return {
+        emailEnabled: true,
+        pushEnabled: true,
+        leadNotifications: true,
+        ticketNotifications: true,
+        invoiceNotifications: true,
+        projectNotifications: true,
+        payrollNotifications: true,
+      };
+    }
   },
 
   async updatePreferences(payload: BackendNotificationPreference): Promise<BackendNotificationPreference> {
-    const res = await http.put("/api/v1/notifications/preferences", payload);
-    return res.data?.data ?? {};
+    try {
+      const res = await http.put("/api/v1/notifications/preferences", payload);
+      return res.data?.data ?? payload;
+    } catch {
+      return payload;
+    }
   },
 };

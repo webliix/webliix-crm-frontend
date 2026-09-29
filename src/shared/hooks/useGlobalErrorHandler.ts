@@ -27,8 +27,7 @@ export function useGlobalErrorHandler() {
           break;
 
         case ErrorCodes.NOT_FOUND:
-          // Redirect to not found page
-          navigate("/404");
+          // API 404 errors are handled by calling component or toasted; do not kick user off active route
           break;
 
         default:

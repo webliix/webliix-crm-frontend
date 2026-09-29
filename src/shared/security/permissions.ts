@@ -48,6 +48,18 @@ export const permissions = {
   reports: {
     view: "REPORTS_VIEW",
   },
+  subscribers: {
+    view: "REPORTS_VIEW",
+  },
+  reviews: {
+    view: "REPORTS_VIEW",
+  },
+  users: {
+    view: "USERS_MANAGE",
+    create: "USERS_MANAGE",
+    edit: "USERS_MANAGE",
+    delete: "USERS_DELETE",
+  },
   settings: {
     view: "SETTINGS_VIEW",
   },

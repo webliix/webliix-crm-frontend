@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import Divider from "@mui/material/Divider";
@@ -18,6 +19,7 @@ interface Props {
 }
 
 export function LeadDetailsDrawer({ id, open, onClose }: Props) {
+  const navigate = useNavigate();
   const { data, isLoading, isError } = useLead(id ?? 0);
   const lead: LeadResponse | undefined = data?.data;
 
@@ -109,6 +111,18 @@ export function LeadDetailsDrawer({ id, open, onClose }: Props) {
               Send Email
             </AppButton>
           </Box>
+
+          {/* Lead Conversion Action */}
+          <AppButton
+            appVariant="primary"
+            fullWidth
+            onClick={() => {
+              onClose();
+              navigate("/customers", { state: { convertLead: lead } });
+            }}
+          >
+            Convert Lead to Client Account & Project
+          </AppButton>
 
           {/* Contact Details */}
           <Box>

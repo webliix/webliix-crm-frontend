@@ -153,12 +153,13 @@ export function DashboardHeader({ onMenuClick }: DashboardHeaderProps) {
             >
               <Avatar
                 sx={{
-                  width: 30,
-                  height: 30,
-                  fontSize: "0.8125rem",
+                  width: 32,
+                  height: 32,
+                  fontSize: "0.85rem",
                   fontWeight: 700,
-                  backgroundColor: tokens.colors.primary.main,
+                  background: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)",
                   color: "#ffffff",
+                  boxShadow: "0 2px 8px rgba(99, 102, 241, 0.25)",
                 }}
               >
                 {userInitial}
