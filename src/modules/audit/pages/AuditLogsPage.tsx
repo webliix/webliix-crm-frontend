@@ -8,6 +8,7 @@ import TableContainer from "@mui/material/TableContainer";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import Chip from "@mui/material/Chip";
+import Typography from "@mui/material/Typography";
 import SecurityIcon from "@mui/icons-material/Security";
 import { PageLayout } from "@/shared/components/ui/layout";
 import { BrandLoader } from "@/shared/components/ui/feedback/BrandLoader";
@@ -16,58 +17,47 @@ import { http } from "@/shared/services/http";
 
 interface AuditLogItem {
   id: number;
+  userId: number;
+  username: string;
   action: string;
-  performedBy: string;
+  module: string;
+  entityType: string;
+  entityId: string;
   ipAddress: string;
-  details: string;
+  status: string;
   createdAt: string;
 }
 
 export default function AuditLogsPage() {
   const [logs, setLogs] = useState<AuditLogItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    http.get("/api/v1/audit-logs")
+    http
+      .post("/api/v1/audit/logs", { module: null, action: null, page: 0, size: 20 })
       .then((res) => {
         const data = res.data?.data;
-        if (Array.isArray(data)) setLogs(data);
-        else if (data?.content) setLogs(data.content);
-        else setLogs(sampleLogs);
-        setLoading(false);
+        if (Array.isArray(data)) {
+          setLogs(data);
+        } else if (data?.content) {
+          setLogs(data.content);
+        } else {
+          setLogs([]);
+        }
       })
       .catch(() => {
-        setLogs(sampleLogs);
-        setLoading(false);
-      });
+        setError("Failed to load audit logs. Please try again.");
+      })
+      .finally(() => setLoading(false));
   }, []);
 
-  const sampleLogs: AuditLogItem[] = [
-    {
-      id: 1,
-      action: "USER_LOGIN_SUCCESS",
-      performedBy: "superadmin@webliix.com",
-      ipAddress: "127.0.0.1",
-      details: "Authenticated via JWT Auth Service",
-      createdAt: new Date().toISOString(),
-    },
-    {
-      id: 2,
-      action: "CLIENT_TICKET_CREATED",
-      performedBy: "himanshusharmawwlk@gmail.com",
-      ipAddress: "127.0.0.1",
-      details: "Created ticket TCK-1042 via Client Portal",
-      createdAt: new Date(Date.now() - 3600000).toISOString(),
-    },
-    {
-      id: 3,
-      action: "PUBLIC_LEAD_SUBMITTED",
-      performedBy: "Inquirer",
-      ipAddress: "127.0.0.1",
-      details: "Form submission captured from webliix.com contact page",
-      createdAt: new Date(Date.now() - 86400000).toISOString(),
-    },
-  ];
+  const getActionColor = (action: string) => {
+    if (action?.includes("DELETE") || action?.includes("FAIL")) return "error";
+    if (action?.includes("CREATE") || action?.includes("SUCCESS")) return "success";
+    if (action?.includes("UPDATE")) return "warning";
+    return "default";
+  };
 
   return (
     <PageLayout
@@ -78,17 +68,33 @@ export default function AuditLogsPage() {
         <Box sx={{ py: 6, textAlign: "center" }}>
           <BrandLoader message="Fetching security audit logs..." size="medium" />
         </Box>
+      ) : error ? (
+        <Box sx={{ py: 6, textAlign: "center" }}>
+          <Typography color="error">{error}</Typography>
+        </Box>
+      ) : logs.length === 0 ? (
+        <Box sx={{ py: 6, textAlign: "center" }}>
+          <Typography color="text.secondary">No audit logs found.</Typography>
+        </Box>
       ) : (
-        <Card sx={{ borderRadius: tokens.borderRadius.lg, border: `1px solid ${tokens.colors.secondary[200]}`, overflow: "hidden" }}>
+        <Card
+          sx={{
+            borderRadius: tokens.borderRadius.lg,
+            border: `1px solid ${tokens.colors.secondary[200]}`,
+            overflow: "hidden",
+          }}
+        >
           <TableContainer>
             <Table>
               <TableHead sx={{ bgcolor: tokens.colors.secondary[50] }}>
                 <TableRow>
                   <TableCell sx={{ fontWeight: 700 }}>Timestamp</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Security Event</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Performed By</TableCell>
+                  <TableCell sx={{ fontWeight: 700 }}>Username</TableCell>
+                  <TableCell sx={{ fontWeight: 700 }}>Action</TableCell>
+                  <TableCell sx={{ fontWeight: 700 }}>Module</TableCell>
+                  <TableCell sx={{ fontWeight: 700 }}>Entity</TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>IP Address</TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>Activity Details</TableCell>
+                  <TableCell sx={{ fontWeight: 700 }}>Status</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -97,17 +103,40 @@ export default function AuditLogsPage() {
                     <TableCell sx={{ fontSize: "0.8125rem", color: "text.secondary" }}>
                       {new Date(l.createdAt).toLocaleString()}
                     </TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>{l.username}</TableCell>
                     <TableCell>
                       <Chip
                         icon={<SecurityIcon style={{ fontSize: 14 }} />}
                         label={l.action}
                         size="small"
-                        sx={{ fontWeight: 700, bgcolor: tokens.colors.primary[50], color: tokens.colors.primary.main }}
+                        color={getActionColor(l.action) as any}
+                        sx={{ fontWeight: 700 }}
                       />
                     </TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>{l.performedBy}</TableCell>
+                    <TableCell>
+                      <Chip
+                        label={l.module}
+                        size="small"
+                        sx={{
+                          fontWeight: 700,
+                          bgcolor: tokens.colors.primary[50],
+                          color: tokens.colors.primary.main,
+                        }}
+                      />
+                    </TableCell>
+                    <TableCell sx={{ color: tokens.colors.secondary[800] }}>
+                      {l.entityType}
+                      {l.entityId ? ` #${l.entityId}` : ""}
+                    </TableCell>
                     <TableCell sx={{ fontFamily: "monospace" }}>{l.ipAddress}</TableCell>
-                    <TableCell sx={{ color: tokens.colors.secondary[800] }}>{l.details}</TableCell>
+                    <TableCell>
+                      <Chip
+                        label={l.status}
+                        size="small"
+                        color={l.status === "SUCCESS" ? "success" : "error"}
+                        sx={{ fontWeight: 700 }}
+                      />
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>

@@ -75,6 +75,16 @@ export const permissions = {
   auditLogs: {
     view: "USERS_MANAGE",
   },
+  employees: {
+    view: "REPORTS_VIEW",
+    create: "USERS_MANAGE",
+    edit: "USERS_MANAGE",
+  },
+  expenses: {
+    view: "REPORTS_VIEW",
+    create: "REPORTS_VIEW",
+    edit: "REPORTS_VIEW",
+  },
 } as const;
 
 export type Permissions = typeof permissions;

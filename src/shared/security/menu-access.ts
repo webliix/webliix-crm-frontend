@@ -91,6 +91,18 @@ export const menuAccess = {
     path: "/audit-logs",
     permission: permissions.auditLogs.view,
   },
+  employees: {
+    id: "employees",
+    label: "Employees",
+    path: "/employees",
+    permission: permissions.employees.view,
+  },
+  expenses: {
+    id: "expenses",
+    label: "Expenses",
+    path: "/expenses",
+    permission: permissions.expenses.view,
+  },
 } as const;
 
 export type MenuAccessItem = typeof menuAccess[keyof typeof menuAccess];

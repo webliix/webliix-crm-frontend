@@ -21,6 +21,9 @@ import ProjectDetailPage from "@/modules/projects/pages/ProjectDetailPage";
 import InvoiceListPage from "@/modules/invoices/pages/InvoiceListPage";
 import AutomationsListPage from "@/modules/automations/pages/AutomationsListPage";
 import PayrollListPage from "@/modules/hr/pages/PayrollListPage";
+import EmployeeListPage from "@/modules/hr/pages/EmployeeListPage";
+import ExpenseListPage from "@/modules/expenses/pages/ExpenseListPage";
+import ReportsPage from "@/modules/reports/pages/ReportsPage";
 import AuditLogsPage from "@/modules/audit/pages/AuditLogsPage";
 import QuotationListPage from "@/modules/quotations/pages/QuotationListPage";
 import { AccessDeniedPage } from "@/modules/system/pages/AccessDeniedPage";
@@ -292,6 +295,36 @@ export function AppRouter() {
                 <PageGuard permission={routeAccess["/quotations"]}>
                   <QuotationListPage />
                 </PageGuard>
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/employees"
+          element={
+            <ProtectedRoute>
+              <DashboardLayout>
+                <EmployeeListPage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/expenses"
+          element={
+            <ProtectedRoute>
+              <DashboardLayout>
+                <ExpenseListPage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/reports"
+          element={
+            <ProtectedRoute>
+              <DashboardLayout>
+                <ReportsPage />
               </DashboardLayout>
             </ProtectedRoute>
           }

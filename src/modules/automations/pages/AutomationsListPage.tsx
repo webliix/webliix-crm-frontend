@@ -18,60 +18,44 @@ interface AutomationRule {
   ruleName: string;
   triggerEvent: string;
   actionType: string;
-  active: boolean;
-  executionCount?: number;
+  isActive: boolean;
+  successCount: number;
+  failureCount: number;
 }
 
 export default function AutomationsListPage() {
   const [rules, setRules] = useState<AutomationRule[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    http.get("/api/v1/automations")
+    http
+      .get("/api/v1/automation/rules")
       .then((res) => {
         const data = res.data?.data;
-        if (Array.isArray(data)) setRules(data);
-        else if (data?.content) setRules(data.content);
-        else setRules(sampleRules);
-        setLoading(false);
+        if (Array.isArray(data)) {
+          setRules(data);
+        } else if (data?.content) {
+          setRules(data.content);
+        } else {
+          setRules([]);
+        }
       })
       .catch(() => {
-        setRules(sampleRules);
-        setLoading(false);
-      });
+        setError("Failed to load automation rules. Please try again.");
+      })
+      .finally(() => setLoading(false));
   }, []);
 
-  const sampleRules: AutomationRule[] = [
-    {
-      id: 1,
-      ruleName: "Automated Welcome & Credentials Email",
-      triggerEvent: "CUSTOMER_CREATED",
-      actionType: "SEND_EMAIL_VIA_BREVO",
-      active: true,
-      executionCount: 42,
-    },
-    {
-      id: 2,
-      ruleName: "Lead WhatsApp Confirmation Dispatch",
-      triggerEvent: "PUBLIC_LEAD_SUBMITTED",
-      actionType: "WHATSAPP_GREETING_URL",
-      active: true,
-      executionCount: 128,
-    },
-    {
-      id: 3,
-      ruleName: "Support Ticket SLA Violation Alert",
-      triggerEvent: "TICKET_SLA_EXPIRED",
-      actionType: "NOTIFY_SUPER_ADMIN",
-      active: true,
-      executionCount: 5,
-    },
-  ];
-
-  const handleToggle = (id: number) => {
-    setRules((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, active: !r.active } : r))
-    );
+  const handleToggle = async (id: number) => {
+    try {
+      await http.patch(`/api/v1/automation/rules/${id}/toggle`, {});
+      setRules((prev) =>
+        prev.map((r) => (r.id === id ? { ...r, isActive: !r.isActive } : r))
+      );
+    } catch {
+      // Toggle failed — keep current state
+    }
   };
 
   return (
@@ -88,6 +72,14 @@ export default function AutomationsListPage() {
         <Box sx={{ py: 6, textAlign: "center" }}>
           <BrandLoader message="Loading automation triggers..." size="medium" />
         </Box>
+      ) : error ? (
+        <Box sx={{ py: 6, textAlign: "center" }}>
+          <Typography color="error">{error}</Typography>
+        </Box>
+      ) : rules.length === 0 ? (
+        <Box sx={{ py: 6, textAlign: "center" }}>
+          <Typography color="text.secondary">No automation rules configured.</Typography>
+        </Box>
       ) : (
         <Box sx={{ display: "grid", gap: 3 }}>
           {rules.map((rule) => (
@@ -99,32 +91,61 @@ export default function AutomationsListPage() {
                 boxShadow: tokens.shadows.sm,
               }}
             >
-              <CardContent sx={{ p: 3, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 2 }}>
+              <CardContent
+                sx={{
+                  p: 3,
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  flexWrap: "wrap",
+                  gap: 2,
+                }}
+              >
                 <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-                  <Box sx={{ p: 1.5, borderRadius: tokens.borderRadius.md, bgcolor: tokens.colors.primary[50], color: tokens.colors.primary.main }}>
+                  <Box
+                    sx={{
+                      p: 1.5,
+                      borderRadius: tokens.borderRadius.md,
+                      bgcolor: tokens.colors.primary[50],
+                      color: tokens.colors.primary.main,
+                    }}
+                  >
                     <AutoFixHighIcon />
                   </Box>
                   <Box>
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}>
-                      <Typography variant="subtitle1" fontWeight={800} color={tokens.colors.secondary[900]}>
+                      <Typography
+                        variant="subtitle1"
+                        fontWeight={800}
+                        color={tokens.colors.secondary[900]}
+                      >
                         {rule.ruleName}
                       </Typography>
-                      <Chip label={rule.triggerEvent} size="small" sx={{ fontWeight: 700, fontSize: "0.7rem" }} />
+                      <Chip
+                        label={rule.triggerEvent}
+                        size="small"
+                        sx={{ fontWeight: 700, fontSize: "0.7rem" }}
+                      />
                     </Box>
                     <Typography variant="body2" color="text.secondary">
-                      Action: <strong>{rule.actionType}</strong> • Triggered {rule.executionCount ?? 0} times
+                      Action: <strong>{rule.actionType}</strong> &nbsp;•&nbsp; ✓{" "}
+                      {rule.successCount} successes &nbsp;/&nbsp; ✗ {rule.failureCount} failures
                     </Typography>
                   </Box>
                 </Box>
 
                 <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
                   <Chip
-                    label={rule.active ? "Active" : "Disabled"}
-                    color={rule.active ? "success" : "default"}
+                    label={rule.isActive ? "Active" : "Disabled"}
+                    color={rule.isActive ? "success" : "default"}
                     size="small"
                     sx={{ fontWeight: 700 }}
                   />
-                  <Switch checked={rule.active} onChange={() => handleToggle(rule.id)} color="primary" />
+                  <Switch
+                    checked={rule.isActive}
+                    onChange={() => handleToggle(rule.id)}
+                    color="primary"
+                  />
                 </Box>
               </CardContent>
             </Card>
