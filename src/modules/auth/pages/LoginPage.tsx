@@ -40,59 +40,20 @@ export default function LoginPage() {
       <AppCard padding="lg" cardVariant="elevated" sx={{ p: { xs: 3, sm: 4.5 } }}>
         <Box sx={{ textAlign: "center", mb: 3.5 }}>
           <Box
+            component="img"
+            src="https://res.cloudinary.com/vhth8clt/image/upload/v1788210409/logo.png"
+            alt="Webliix Logo"
             sx={{
-              width: 48,
-              height: 48,
-              borderRadius: tokens.borderRadius.md,
-              backgroundColor: tokens.colors.primary.main,
-              color: "#ffffff",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontWeight: 800,
-              fontSize: "1.5rem",
+              height: 52,
               mx: "auto",
               mb: 2,
-              boxShadow: `0 4px 12px ${tokens.colors.primary[300]}`,
+              objectFit: "contain",
+              filter: "drop-shadow(0px 2px 8px rgba(0,0,0,0.06))",
             }}
-          >
-            W
-          </Box>
+          />
           <Typography variant="h5" fontWeight={700} color={tokens.colors.secondary[900]} sx={{ letterSpacing: "-0.015em" }}>
-            Webliix Admin CRM
+            Webliix Portal
           </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-            Sign in for Super Admin, Admin, and Internal Team Operations
-          </Typography>
-
-          <Box
-            sx={{
-              mt: 2,
-              p: 1.5,
-              borderRadius: tokens.borderRadius.md,
-              bgcolor: tokens.colors.primary[50],
-              border: `1px solid ${tokens.colors.primary[200]}`,
-            }}
-          >
-            <Typography variant="caption" fontWeight={600} color={tokens.colors.primary[900]} display="block">
-              Client / Customer Account?
-            </Typography>
-            <Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.75rem" }}>
-              Please log in via the dedicated Client Portal:{" "}
-              <Typography
-                component="a"
-                href="https://login.webliix.com"
-                target="_blank"
-                rel="noreferrer"
-                variant="caption"
-                fontWeight={700}
-                color={tokens.colors.primary.main}
-                sx={{ textDecoration: "underline" }}
-              >
-                login.webliix.com
-              </Typography>
-            </Typography>
-          </Box>
         </Box>
 
         <form onSubmit={handleSubmit(onSubmit)} noValidate>
@@ -174,26 +135,10 @@ export default function LoginPage() {
               loadingText="Authenticating..."
               sx={{ mt: 1 }}
             >
-              Sign In to Hub
+              Sign In
             </AppButton>
           </Box>
         </form>
-
-        <Box sx={{ textAlign: "center", mt: 3, pt: 2, borderTop: `1px solid ${tokens.colors.secondary[100]}` }}>
-          <Typography variant="caption" color="text.secondary">
-            Don&apos;t have an account?{" "}
-            <Typography
-              component={Link}
-              to="/register"
-              variant="caption"
-              fontWeight={700}
-              color={tokens.colors.primary.main}
-              sx={{ textDecoration: "none", "&:hover": { textDecoration: "underline" } }}
-            >
-              Create Account
-            </Typography>
-          </Typography>
-        </Box>
       </AppCard>
     </Box>
   );

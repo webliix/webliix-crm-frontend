@@ -4,11 +4,20 @@ export interface ProjectItem {
   id: number;
   projectName: string;
   projectCode: string;
-  description: string;
+  description?: string;
+  budget?: number;
   startDate?: string;
+  expectedEndDate?: string;
   dueDate?: string;
+  actualEndDate?: string;
   status: string;
+  priority?: string;
   progressPercentage: number;
+  billable?: boolean;
+  customerId?: number;
+  customerName?: string;
+  customerEmail?: string;
+  customerCompanyName?: string;
   customer?: {
     id: number;
     companyName: string;

@@ -122,6 +122,12 @@ export default function ProjectListPage() {
                   {getStatusChip(project.status)}
                 </Box>
 
+                {(project.customerName || project.customerCompanyName || project.customer?.companyName || project.customer?.contactPerson) && (
+                  <Typography variant="caption" fontWeight={700} color={tokens.colors.primary.main} sx={{ mb: 0.5, display: "block" }}>
+                    Client: {project.customerName || project.customerCompanyName || project.customer?.contactPerson || project.customer?.companyName}
+                  </Typography>
+                )}
+
                 <Typography variant="h6" fontWeight={700} color={tokens.colors.secondary[900]} sx={{ mb: 1 }}>
                   {project.projectName}
                 </Typography>

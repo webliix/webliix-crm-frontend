@@ -144,6 +144,24 @@ export default function ProjectDetailPage() {
             />
           </Box>
 
+          {(project.customerName || project.customerCompanyName || project.customerEmail || project.customer?.companyName) && (
+            <Box sx={{ mb: 2, p: 1.5, borderRadius: tokens.borderRadius.md, bgcolor: tokens.colors.secondary[50], border: `1px solid ${tokens.colors.secondary[200]}`, display: "flex", gap: 3, flexWrap: "wrap" }}>
+              <Typography variant="body2" fontWeight={600} color={tokens.colors.secondary[800]}>
+                Client: <strong>{project.customerName || project.customerCompanyName || project.customer?.contactPerson || project.customer?.companyName || "N/A"}</strong>
+              </Typography>
+              {(project.customerEmail || project.customer?.email) && (
+                <Typography variant="body2" color="text.secondary">
+                  Email: <strong>{project.customerEmail || project.customer?.email}</strong>
+                </Typography>
+              )}
+              {project.expectedEndDate && (
+                <Typography variant="body2" color="text.secondary">
+                  Expected Completion: <strong>{new Date(project.expectedEndDate).toLocaleDateString()}</strong>
+                </Typography>
+              )}
+            </Box>
+          )}
+
           <Typography variant="body1" color="text.secondary" sx={{ mb: 3, maxW: 800, lineHeight: 1.7 }}>
             {project.description || "Website and application development deliverables."}
           </Typography>
