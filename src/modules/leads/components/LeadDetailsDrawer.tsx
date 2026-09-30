@@ -46,8 +46,12 @@ export function LeadDetailsDrawer({ id, open, onClose }: Props) {
     <AppDrawer
       open={open}
       onClose={onClose}
-      title={lead?.companyName || "Lead Details"}
-      subtitle={lead?.contactPerson ? `Contact: ${lead.contactPerson}` : "Lead Profile"}
+      title={lead?.contactPerson || lead?.companyName || "Lead Details"}
+      subtitle={
+        lead?.companyName && lead?.contactPerson
+          ? `Company: ${lead.companyName}`
+          : `Lead Source: ${lead?.source || "WEBSITE"}`
+      }
       width="md"
     >
       {isLoading ? (

@@ -16,18 +16,25 @@ export function createLeadColumns(handlers?: {
   return [
     {
       field: "companyName",
-      headerName: "Company",
-      flex: 1.2,
-      render: (val, row) => (
-        <Box>
-          <Typography variant="body2" fontWeight={600} color={tokens.colors.secondary[900]}>
-            {val || "Unnamed Lead"}
-          </Typography>
-          <Typography variant="caption" color="text.secondary">
-            {row.contactPerson || "-"}
-          </Typography>
-        </Box>
-      ),
+      headerName: "Inquirer / Company",
+      flex: 1.3,
+      render: (_val, row) => {
+        const primaryName = row.contactPerson || row.companyName || "Website Inquiry";
+        const secondaryInfo = row.companyName && row.contactPerson ? row.companyName : null;
+
+        return (
+          <Box>
+            <Typography variant="body2" fontWeight={600} color={tokens.colors.secondary[900]}>
+              {primaryName}
+            </Typography>
+            {secondaryInfo && (
+              <Typography variant="caption" color="text.secondary">
+                {secondaryInfo}
+              </Typography>
+            )}
+          </Box>
+        );
+      },
     },
     {
       field: "email",
@@ -54,11 +61,27 @@ export function createLeadColumns(handlers?: {
       field: "source",
       headerName: "Source",
       flex: 0.8,
-      render: (val) => (
-        <Typography variant="body2" color="text.secondary">
-          {val ? String(val).replace(/_/g, " ") : "-"}
-        </Typography>
-      ),
+      render: (val) => {
+        const sourceStr = val ? String(val).replace(/_/g, " ") : "WEBSITE";
+        const isWebsite = String(val).toUpperCase() === "WEBSITE";
+        return (
+          <Typography
+            variant="caption"
+            sx={{
+              px: 1,
+              py: 0.25,
+              borderRadius: tokens.borderRadius.sm,
+              fontWeight: 600,
+              bgcolor: isWebsite ? tokens.colors.primary[50] : tokens.colors.secondary[100],
+              color: isWebsite ? tokens.colors.primary[700] : tokens.colors.secondary[700],
+              border: `1px solid ${isWebsite ? tokens.colors.primary[200] : tokens.colors.secondary[200]}`,
+              display: "inline-block",
+            }}
+          >
+            {sourceStr}
+          </Typography>
+        );
+      },
     },
     {
       field: "estimatedValue",
