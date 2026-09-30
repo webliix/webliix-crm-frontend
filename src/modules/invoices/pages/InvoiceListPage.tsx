@@ -10,7 +10,7 @@ import TableCell from "@mui/material/TableCell";
 import TableContainer from "@mui/material/TableContainer";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
-import CircularProgress from "@mui/material/CircularProgress";
+import { BrandLoader } from "@/shared/components/ui/feedback/BrandLoader";
 import ReceiptLongOutlinedIcon from "@mui/icons-material/ReceiptLongOutlined";
 import AccountBalanceWalletOutlinedIcon from "@mui/icons-material/AccountBalanceWalletOutlined";
 import CheckCircleOutlinedIcon from "@mui/icons-material/CheckCircleOutlined";
@@ -135,11 +135,8 @@ export default function InvoiceListPage() {
 
       {/* Invoice Table */}
       {loading ? (
-        <Box sx={{ py: 10, textAlign: "center" }}>
-          <CircularProgress size={40} sx={{ color: tokens.colors.primary.main }} />
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 2, fontWeight: 500 }}>
-            Loading invoices...
-          </Typography>
+        <Box sx={{ py: 6, textAlign: "center" }}>
+          <BrandLoader message="Loading invoices & billing history..." size="medium" />
         </Box>
       ) : invoices.length === 0 ? (
         <Card sx={{ borderRadius: tokens.borderRadius.lg, border: `1px solid ${tokens.colors.secondary[200]}`, p: 6, textAlign: "center" }}>

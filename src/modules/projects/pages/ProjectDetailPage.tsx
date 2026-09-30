@@ -8,7 +8,6 @@ import Chip from "@mui/material/Chip";
 import LinearProgress from "@mui/material/LinearProgress";
 import Button from "@mui/material/Button";
 import TextField from "@mui/material/TextField";
-import CircularProgress from "@mui/material/CircularProgress";
 import Divider from "@mui/material/Divider";
 import Avatar from "@mui/material/Avatar";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
@@ -25,6 +24,7 @@ import {
   type ProjectTaskItem,
   type ProjectCommentItem,
 } from "../api/projectApi";
+import { BrandLoader } from "@/shared/components/ui/feedback/BrandLoader";
 
 export default function ProjectDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -87,11 +87,8 @@ export default function ProjectDetailPage() {
 
   if (loading) {
     return (
-      <Box sx={{ py: 12, textAlign: "center" }}>
-        <CircularProgress size={44} sx={{ color: tokens.colors.primary.main }} />
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 2, fontWeight: 500 }}>
-          Loading project details...
-        </Typography>
+      <Box sx={{ py: 6, textAlign: "center" }}>
+        <BrandLoader message="Loading project details & milestones..." size="medium" />
       </Box>
     );
   }

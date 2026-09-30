@@ -6,7 +6,7 @@ import CardContent from "@mui/material/CardContent";
 import Chip from "@mui/material/Chip";
 import LinearProgress from "@mui/material/LinearProgress";
 import Button from "@mui/material/Button";
-import CircularProgress from "@mui/material/CircularProgress";
+import { BrandLoader } from "@/shared/components/ui/feedback/BrandLoader";
 import FolderSpecialOutlinedIcon from "@mui/icons-material/FolderSpecialOutlined";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import CalendarTodayOutlinedIcon from "@mui/icons-material/CalendarTodayOutlined";
@@ -80,11 +80,8 @@ export default function ProjectListPage() {
       </Box>
 
       {loading ? (
-        <Box sx={{ py: 10, textAlign: "center" }}>
-          <CircularProgress size={40} sx={{ color: tokens.colors.primary.main }} />
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 2, fontWeight: 500 }}>
-            Loading your projects...
-          </Typography>
+        <Box sx={{ py: 6, textAlign: "center" }}>
+          <BrandLoader message="Loading projects & deliverables..." size="medium" />
         </Box>
       ) : projects.length === 0 ? (
         <Card sx={{ borderRadius: tokens.borderRadius.lg, border: `1px solid ${tokens.colors.secondary[200]}`, p: 6, textAlign: "center" }}>
