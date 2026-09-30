@@ -59,11 +59,40 @@ export default function LoginPage() {
             W
           </Box>
           <Typography variant="h5" fontWeight={700} color={tokens.colors.secondary[900]} sx={{ letterSpacing: "-0.015em" }}>
-            Welcome Back
+            Webliix Admin CRM
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-            Sign in to access your Webliix CRM & ERP hub
+            Sign in for Super Admin, Admin, and Internal Team Operations
           </Typography>
+
+          <Box
+            sx={{
+              mt: 2,
+              p: 1.5,
+              borderRadius: tokens.borderRadius.md,
+              bgcolor: tokens.colors.primary[50],
+              border: `1px solid ${tokens.colors.primary[200]}`,
+            }}
+          >
+            <Typography variant="caption" fontWeight={600} color={tokens.colors.primary[900]} display="block">
+              Client / Customer Account?
+            </Typography>
+            <Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.75rem" }}>
+              Please log in via the dedicated Client Portal:{" "}
+              <Typography
+                component="a"
+                href="https://login.webliix.com"
+                target="_blank"
+                rel="noreferrer"
+                variant="caption"
+                fontWeight={700}
+                color={tokens.colors.primary.main}
+                sx={{ textDecoration: "underline" }}
+              >
+                login.webliix.com
+              </Typography>
+            </Typography>
+          </Box>
         </Box>
 
         <form onSubmit={handleSubmit(onSubmit)} noValidate>
