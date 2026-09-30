@@ -15,6 +15,18 @@ export function getVisibleNavigationItems(user: CurrentUser | null | undefined):
     return menuItems;
   }
 
+  const isClient = user.roles?.some(
+    (r) => {
+      const clean = r.toUpperCase().replace(/^ROLE_/, "");
+      return clean === "CLIENT" || clean === "USER";
+    }
+  );
+
+  if (isClient) {
+    const clientAllowedPaths = ["/dashboard", "/projects", "/invoices", "/tickets"];
+    return menuItems.filter((item) => clientAllowedPaths.includes(item.path));
+  }
+
   return menuItems.filter(
     (item) => !item.permission || (user.permissions && user.permissions.includes(item.permission))
   );

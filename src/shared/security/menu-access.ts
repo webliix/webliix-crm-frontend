@@ -55,6 +55,12 @@ export const menuAccess = {
     path: "/users",
     permission: permissions.users.view,
   },
+  invoices: {
+    id: "invoices",
+    label: "Invoices & Billing",
+    path: "/invoices",
+    permission: permissions.invoices.view,
+  },
   reports: {
     id: "reports",
     label: "Reports",

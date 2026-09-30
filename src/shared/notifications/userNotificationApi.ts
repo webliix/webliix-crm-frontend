@@ -26,9 +26,10 @@ export interface BackendNotificationPreference {
 }
 
 export const userNotificationApi = {
-  async getNotifications(recipient: string = "admin@webliix.in"): Promise<BackendNotificationItem[]> {
+  async getNotifications(recipient?: string): Promise<BackendNotificationItem[]> {
     try {
-      const res = await http.get(`/api/v1/notifications/${recipient}`);
+      const endpoint = recipient ? `/api/v1/notifications/${recipient}` : `/api/v1/notifications`;
+      const res = await http.get(endpoint);
       return res.data?.data ?? [];
     } catch {
       const fallbackRes = await http.get("/api/v1/notifications");
@@ -40,16 +41,18 @@ export const userNotificationApi = {
     await http.put(`/api/v1/notifications/${id}/read`);
   },
 
-  async markAllAsRead(recipient: string = "admin@webliix.in"): Promise<void> {
-    await http.put(`/api/v1/notifications/${recipient}/read-all`);
+  async markAllAsRead(recipient?: string): Promise<void> {
+    const endpoint = recipient ? `/api/v1/notifications/${recipient}/read-all` : `/api/v1/notifications/read-all`;
+    await http.put(endpoint);
   },
 
   async deleteNotification(id: number | string): Promise<void> {
     await http.delete(`/api/v1/notifications/${id}`);
   },
 
-  async clearAllNotifications(recipient: string = "admin@webliix.in"): Promise<void> {
-    await http.delete(`/api/v1/notifications/clear/${recipient}`);
+  async clearAllNotifications(recipient?: string): Promise<void> {
+    const endpoint = recipient ? `/api/v1/notifications/clear/${recipient}` : `/api/v1/notifications/clear`;
+    await http.delete(endpoint);
   },
 
   async getPreferences(userId: number = 1): Promise<BackendNotificationPreference> {

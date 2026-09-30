@@ -16,6 +16,9 @@ import TicketListPage from "@/modules/tickets/pages/TicketListPage";
 import SubscriberListPage from "@/modules/newsletter/pages/SubscriberListPage";
 import ReviewListPage from "@/modules/reviews/pages/ReviewListPage";
 import UserListPage from "@/modules/system/pages/UserListPage";
+import ProjectListPage from "@/modules/projects/pages/ProjectListPage";
+import ProjectDetailPage from "@/modules/projects/pages/ProjectDetailPage";
+import InvoiceListPage from "@/modules/invoices/pages/InvoiceListPage";
 import { AccessDeniedPage } from "@/modules/system/pages/AccessDeniedPage";
 import { NotFoundPage } from "@/modules/system/pages/NotFoundPage";
 import { ProtectedRoute } from "@/app/router/ProtectedRoute";
@@ -99,6 +102,36 @@ export function AppRouter() {
             <ProtectedRoute>
               <DashboardLayout>
                 <ProfilePage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/projects"
+          element={
+            <ProtectedRoute>
+              <DashboardLayout>
+                <ProjectListPage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/projects/:id"
+          element={
+            <ProtectedRoute>
+              <DashboardLayout>
+                <ProjectDetailPage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/invoices"
+          element={
+            <ProtectedRoute>
+              <DashboardLayout>
+                <InvoiceListPage />
               </DashboardLayout>
             </ProtectedRoute>
           }
