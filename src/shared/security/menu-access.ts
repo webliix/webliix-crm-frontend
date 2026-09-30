@@ -67,6 +67,30 @@ export const menuAccess = {
     path: "/reports",
     permission: permissions.reports.view,
   },
+  automations: {
+    id: "automations",
+    label: "Automations",
+    path: "/automations",
+    permission: permissions.automations.view,
+  },
+  payroll: {
+    id: "payroll",
+    label: "HR & Payroll",
+    path: "/payroll",
+    permission: permissions.payroll.view,
+  },
+  quotations: {
+    id: "quotations",
+    label: "Quotations & Proposals",
+    path: "/quotations",
+    permission: permissions.quotations.view,
+  },
+  auditLogs: {
+    id: "auditLogs",
+    label: "Audit Logs",
+    path: "/audit-logs",
+    permission: permissions.auditLogs.view,
+  },
 } as const;
 
 export type MenuAccessItem = typeof menuAccess[keyof typeof menuAccess];

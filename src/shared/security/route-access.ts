@@ -12,6 +12,10 @@ export const routeAccess = {
   "/reviews": permissions.reviews.view,
   "/users": permissions.users.view,
   "/reports": permissions.reports.view,
+  "/automations": permissions.automations.view,
+  "/payroll": permissions.payroll.view,
+  "/quotations": permissions.quotations.view,
+  "/audit-logs": permissions.auditLogs.view,
 } as const;
 
 export type RouteAccessPath = keyof typeof routeAccess;

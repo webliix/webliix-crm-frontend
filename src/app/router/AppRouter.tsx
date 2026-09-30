@@ -19,6 +19,10 @@ import UserListPage from "@/modules/system/pages/UserListPage";
 import ProjectListPage from "@/modules/projects/pages/ProjectListPage";
 import ProjectDetailPage from "@/modules/projects/pages/ProjectDetailPage";
 import InvoiceListPage from "@/modules/invoices/pages/InvoiceListPage";
+import AutomationsListPage from "@/modules/automations/pages/AutomationsListPage";
+import PayrollListPage from "@/modules/hr/pages/PayrollListPage";
+import AuditLogsPage from "@/modules/audit/pages/AuditLogsPage";
+import QuotationListPage from "@/modules/quotations/pages/QuotationListPage";
 import { AccessDeniedPage } from "@/modules/system/pages/AccessDeniedPage";
 import { NotFoundPage } from "@/modules/system/pages/NotFoundPage";
 import { ProtectedRoute } from "@/app/router/ProtectedRoute";
@@ -239,6 +243,54 @@ export function AppRouter() {
               <DashboardLayout>
                 <PageGuard permission={permissions.leads.edit}>
                   <LeadEditPage />
+                </PageGuard>
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/automations"
+          element={
+            <ProtectedRoute>
+              <DashboardLayout>
+                <PageGuard permission={routeAccess["/automations"]}>
+                  <AutomationsListPage />
+                </PageGuard>
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/payroll"
+          element={
+            <ProtectedRoute>
+              <DashboardLayout>
+                <PageGuard permission={routeAccess["/payroll"]}>
+                  <PayrollListPage />
+                </PageGuard>
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/audit-logs"
+          element={
+            <ProtectedRoute>
+              <DashboardLayout>
+                <PageGuard permission={routeAccess["/audit-logs"]}>
+                  <AuditLogsPage />
+                </PageGuard>
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/quotations"
+          element={
+            <ProtectedRoute>
+              <DashboardLayout>
+                <PageGuard permission={routeAccess["/quotations"]}>
+                  <QuotationListPage />
                 </PageGuard>
               </DashboardLayout>
             </ProtectedRoute>

@@ -63,6 +63,18 @@ export const permissions = {
   settings: {
     view: "SETTINGS_VIEW",
   },
+  automations: {
+    view: "REPORTS_VIEW",
+  },
+  payroll: {
+    view: "REPORTS_VIEW",
+  },
+  quotations: {
+    view: "INVOICES_VIEW",
+  },
+  auditLogs: {
+    view: "USERS_MANAGE",
+  },
 } as const;
 
 export type Permissions = typeof permissions;
