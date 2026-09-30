@@ -103,6 +103,12 @@ export const menuAccess = {
     path: "/expenses",
     permission: permissions.expenses.view,
   },
+  settings: {
+    id: "settings",
+    label: "Settings",
+    path: "/settings",
+    permission: permissions.settings.view,
+  },
 } as const;
 
 export type MenuAccessItem = typeof menuAccess[keyof typeof menuAccess];

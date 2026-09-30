@@ -26,6 +26,7 @@ import ExpenseListPage from "@/modules/expenses/pages/ExpenseListPage";
 import ReportsPage from "@/modules/reports/pages/ReportsPage";
 import AuditLogsPage from "@/modules/audit/pages/AuditLogsPage";
 import QuotationListPage from "@/modules/quotations/pages/QuotationListPage";
+import SettingsPage from "@/modules/settings/pages/SettingsPage";
 import { AccessDeniedPage } from "@/modules/system/pages/AccessDeniedPage";
 import { NotFoundPage } from "@/modules/system/pages/NotFoundPage";
 import { ProtectedRoute } from "@/app/router/ProtectedRoute";
@@ -325,6 +326,16 @@ export function AppRouter() {
             <ProtectedRoute>
               <DashboardLayout>
                 <ReportsPage />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/settings"
+          element={
+            <ProtectedRoute>
+              <DashboardLayout>
+                <SettingsPage />
               </DashboardLayout>
             </ProtectedRoute>
           }

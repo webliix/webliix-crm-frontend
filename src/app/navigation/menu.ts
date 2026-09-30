@@ -19,4 +19,5 @@ export const menuItems: NavigationItem[] = [
   menuAccess.subscribers,
   menuAccess.reviews,
   menuAccess.users,
+  menuAccess.settings,
 ];
