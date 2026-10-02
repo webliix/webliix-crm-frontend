@@ -5,6 +5,7 @@ import InputAdornment from "@mui/material/InputAdornment";
 import SearchIcon from "@mui/icons-material/Search";
 import WhatsAppIcon from "@mui/icons-material/WhatsApp";
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
+import FolderSharedOutlinedIcon from "@mui/icons-material/FolderSharedOutlined";
 import { AppDataTable, type DataTableColumn } from "@/shared/components/ui/table/AppDataTable";
 import { AppTextField } from "@/shared/components/ui/form";
 import { AppStatusChip, EmptyState } from "@/shared/components/ui/feedback";
@@ -79,7 +80,7 @@ export function CustomerTable({
     },
     {
       field: "contactPerson",
-      headerName: "Contact & Email",
+      headerName: "Primary Contact & Email",
       render: (_: any, row: CustomerResponse) => (
         <Box>
           <Typography variant="body2" fontWeight={600} color={tokens.colors.secondary[900]} noWrap>
@@ -102,7 +103,7 @@ export function CustomerTable({
     },
     {
       field: "lifetimeValue",
-      headerName: "Lifetime Value",
+      headerName: "Lifetime Revenue",
       render: (_: any, row: CustomerResponse) => (
         <Typography variant="body2" fontWeight={700} color={tokens.colors.secondary[900]}>
           {row.lifetimeValue ? formatCurrency(row.lifetimeValue) : "₹0"}
@@ -111,12 +112,12 @@ export function CustomerTable({
     },
     {
       field: "active",
-      headerName: "Status",
+      headerName: "Account Status",
       render: (_: any, row: CustomerResponse) => (
         <AppStatusChip
           status={row.active !== false ? "ACTIVE" : "INACTIVE"}
           statusType={row.active !== false ? "success" : "neutral"}
-          sx={{ height: 22, fontSize: "0.7rem" }}
+          sx={{ height: 22, fontSize: "0.7rem", fontWeight: 700 }}
         />
       ),
     },
@@ -134,7 +135,7 @@ export function CustomerTable({
       headerName: "Actions",
       align: "right",
       render: (_: any, row: CustomerResponse) => (
-        <Box sx={{ display: "flex", gap: 1, justifyContent: "flex-end" }}>
+        <Box sx={{ display: "flex", gap: 1, justifyContent: "flex-end", flexWrap: "nowrap" }}>
           {row.phone && (
             <AppButton
               appVariant="secondary"
@@ -145,6 +146,15 @@ export function CustomerTable({
               WhatsApp
             </AppButton>
           )}
+
+          <AppButton
+            appVariant="outlined"
+            appSize="sm"
+            startIcon={<FolderSharedOutlinedIcon sx={{ fontSize: 16 }} />}
+            onClick={() => onSelectCustomer(row.id)}
+          >
+            Docs
+          </AppButton>
 
           <AppButton
             appVariant="primary"
@@ -173,7 +183,7 @@ export function CustomerTable({
       >
         <Box sx={{ maxWidth: { xs: "100%", sm: 360 } }}>
           <AppTextField
-            placeholder="Search clients by name, code, contact..."
+            placeholder="Search clients by company, code, contact..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             InputProps={{
@@ -209,7 +219,7 @@ export function CustomerTable({
               ? "No customer accounts match your selected filter."
               : "No clients registered in the hub yet. Create your first client account."
           }
-          actionText="Add Client"
+          actionText="Onboard Client"
           onAction={onCreateCustomer}
         />
       ) : (

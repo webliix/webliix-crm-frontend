@@ -31,6 +31,7 @@ import EmailOutlinedIcon from "@mui/icons-material/EmailOutlined";
 import SupportAgentIcon from "@mui/icons-material/SupportAgent";
 import ConfirmationNumberOutlinedIcon from "@mui/icons-material/ConfirmationNumberOutlined";
 import ChatOutlinedIcon from "@mui/icons-material/ChatOutlined";
+import FolderSharedOutlinedIcon from "@mui/icons-material/FolderSharedOutlined";
 import {
   projectApi,
   type ProjectItem,
@@ -41,6 +42,9 @@ import {
 import { ticketService } from "@/modules/tickets/services/ticket.service";
 import type { TicketResponse } from "@/modules/tickets/types/ticket.types";
 import { TicketDetailsDrawer, TicketCreateDrawer } from "@/modules/tickets/components";
+import { DocumentExplorer } from "@/modules/documents/components/DocumentExplorer";
+import { documentService } from "@/modules/documents/services/document.service";
+import type { StoredDocument } from "@/modules/documents/types/document.types";
 import { BrandLoader } from "@/shared/components/ui/feedback/BrandLoader";
 import { PageLayout } from "@/shared/components/ui/layout";
 
@@ -53,6 +57,7 @@ export default function ProjectDetailPage() {
   const [tasks, setTasks] = useState<ProjectTaskItem[]>([]);
   const [comments, setComments] = useState<ProjectCommentItem[]>([]);
   const [projectTickets, setProjectTickets] = useState<TicketResponse[]>([]);
+  const [projectDocuments, setProjectDocuments] = useState<StoredDocument[]>([]);
   const [selectedTicketId, setSelectedTicketId] = useState<number | null>(null);
   const [ticketDetailsOpen, setTicketDetailsOpen] = useState<boolean>(false);
   const [ticketCreateOpen, setTicketCreateOpen] = useState<boolean>(false);
@@ -96,7 +101,8 @@ export default function ProjectDetailPage() {
       projectApi.getTasks(id),
       projectApi.getComments(id),
       ticketService.getTicketsByProject(Number(id)),
-    ]).then(([projData, msData, taskData, commentData, ticketData]) => {
+      documentService.getDocuments({ module: "PROJECT", referenceId: Number(id) }),
+    ]).then(([projData, msData, taskData, commentData, ticketData, docData]) => {
       setProject(projData);
       if (projData) {
         setProgressVal(projData.progressPercentage || 0);
@@ -108,6 +114,7 @@ export default function ProjectDetailPage() {
       setTasks(taskData);
       setComments(commentData);
       setProjectTickets(ticketData || []);
+      setProjectDocuments(docData || []);
       setLoading(false);
     });
   };
@@ -635,15 +642,31 @@ export default function ProjectDetailPage() {
           {/* Documentation & Architecture Blueprint */}
           <Card variant="outlined" sx={{ borderRadius: 2 }}>
             <CardContent sx={{ p: 3 }}>
-              <Typography variant="h6" fontWeight="bold" gutterBottom>
-                Project Documentation & Technical Blueprint
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                Technical specifications, schema diagrams, and architecture blueprints.
-              </Typography>
+              <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 1.5, mb: 2 }}>
+                <Box>
+                  <Typography variant="h6" fontWeight="bold">
+                    Project Documentation & Technical Blueprint
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Technical specifications, schema diagrams, and architecture blueprints.
+                  </Typography>
+                </Box>
+                {project.documentationUrl && (
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    startIcon={<OpenInNewIcon />}
+                    href={project.documentationUrl}
+                    target="_blank"
+                    sx={{ fontWeight: "bold" }}
+                  >
+                    Open Cloud Link
+                  </Button>
+                )}
+              </Box>
               <Divider sx={{ mb: 2 }} />
 
-              <Box sx={{ p: 2, borderRadius: 2, bgcolor: "action.hover", border: 1, borderColor: "divider", mb: 2 }}>
+              <Box sx={{ p: 2, borderRadius: 2, bgcolor: "action.hover", border: 1, borderColor: "divider", mb: 2.5 }}>
                 <Typography variant="caption" fontWeight="bold" color="text.secondary" textTransform="uppercase">
                   Architecture Specifications
                 </Typography>
@@ -652,17 +675,29 @@ export default function ProjectDetailPage() {
                 </Typography>
               </Box>
 
-              {project.documentationUrl && (
-                <Button
-                  variant="outlined"
-                  startIcon={<OpenInNewIcon />}
-                  href={project.documentationUrl}
-                  target="_blank"
-                  sx={{ fontWeight: "bold" }}
-                >
-                  Open Cloud Documentation Link
-                </Button>
-              )}
+              <Divider sx={{ my: 2.5 }} />
+
+              <Box sx={{ mb: 1.5 }}>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}>
+                  <FolderSharedOutlinedIcon color="primary" />
+                  <Typography variant="subtitle1" fontWeight="bold">
+                    Project Deliverables & Shared Documents ({projectDocuments.length})
+                  </Typography>
+                </Box>
+                <Typography variant="caption" color="text.secondary">
+                  Contracts, briefs, UI assets, production builds, and reports linked to this project.
+                </Typography>
+              </Box>
+
+              <DocumentExplorer
+                documents={projectDocuments}
+                onRefresh={loadData}
+                allowUpload={true}
+                module="PROJECT"
+                referenceId={Number(project.id)}
+                productName={project.projectName}
+                customerName={project.customerName || project.customerCompanyName}
+              />
             </CardContent>
           </Card>
 
