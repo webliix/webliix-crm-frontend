@@ -21,7 +21,7 @@ interface Props {
 export function LeadDetailsDrawer({ id, open, onClose }: Props) {
   const navigate = useNavigate();
   const { data, isLoading, isError } = useLead(id ?? 0);
-  const lead: LeadResponse | undefined = data?.data;
+  const lead: LeadResponse | undefined = (data as any)?.data ?? ((data as any)?.id ? (data as any) : undefined);
 
   const handleOpenWhatsApp = () => {
     if (!lead?.phone) return;

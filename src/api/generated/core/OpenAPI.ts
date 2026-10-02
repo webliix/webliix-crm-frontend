@@ -4,6 +4,7 @@
 /* eslint-disable */
 import type { ApiRequestOptions } from './ApiRequestOptions';
 import { env } from '@/config/env';
+import { sessionService } from '@/shared/security/session.service';
 
 type Resolver<T> = (options: ApiRequestOptions) => Promise<T>;
 type Headers = Record<string, string>;
@@ -25,7 +26,7 @@ export const OpenAPI: OpenAPIConfig = {
     VERSION: '1.0.0',
     WITH_CREDENTIALS: false,
     CREDENTIALS: 'include',
-    TOKEN: undefined,
+    TOKEN: async () => sessionService.getAccessToken() || '',
     USERNAME: undefined,
     PASSWORD: undefined,
     HEADERS: undefined,

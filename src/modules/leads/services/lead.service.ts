@@ -1,31 +1,40 @@
-import { LeadControllerService } from "@/api/generated";
+import { http } from "@/shared/services/http";
+import type { CreateLeadRequest, ApiResponsePageLeadResponse, ApiResponseLeadResponse, ApiResponseVoid } from "@/api/generated";
 
 export const leadService = {
-  getAll(page?: number, size = 20) {
-    return LeadControllerService.getAllLeads(page, size);
+  async getAll(page = 0, size = 20): Promise<ApiResponsePageLeadResponse> {
+    const res = await http.get("/api/v1/leads", { params: { page, size } });
+    return res.data;
   },
 
-  getById(id: number) {
-    return LeadControllerService.getLead(id);
+  async getById(id: number): Promise<ApiResponseLeadResponse> {
+    const res = await http.get(`/api/v1/leads/${id}`);
+    return res.data;
   },
 
-  create(data: Parameters<typeof LeadControllerService.createLead>[0]) {
-    return LeadControllerService.createLead(data);
+  async create(data: CreateLeadRequest): Promise<ApiResponseLeadResponse> {
+    const res = await http.post("/api/v1/leads", data);
+    return res.data;
   },
 
-  update(id: number, data: Parameters<typeof LeadControllerService.updateLead>[1]) {
-    return LeadControllerService.updateLead(id, data);
+  async update(id: number, data: CreateLeadRequest): Promise<ApiResponseLeadResponse> {
+    const res = await http.put(`/api/v1/leads/${id}`, data);
+    return res.data;
   },
 
-  delete(id: number) {
-    return LeadControllerService.deleteLead(id);
+  async delete(id: number): Promise<ApiResponseVoid> {
+    const res = await http.delete(`/api/v1/leads/${id}`);
+    return res.data;
   },
 
-  search(keyword: string, page?: number, size = 20) {
-    return LeadControllerService.searchLeads(keyword, page, size);
+  async search(keyword: string, page = 0, size = 20): Promise<ApiResponsePageLeadResponse> {
+    const res = await http.get("/api/v1/leads/search", { params: { keyword, page, size } });
+    return res.data;
   },
 
-  convert(id: number) {
-    return LeadControllerService.convertLead(id);
+  async convert(id: number): Promise<ApiResponseVoid> {
+    const res = await http.post(`/api/v1/leads/${id}/convert`);
+    return res.data;
   },
 };
+
