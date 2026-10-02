@@ -28,6 +28,9 @@ import EditNoteOutlinedIcon from "@mui/icons-material/EditNoteOutlined";
 import AddIcon from "@mui/icons-material/Add";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import EmailOutlinedIcon from "@mui/icons-material/EmailOutlined";
+import SupportAgentIcon from "@mui/icons-material/SupportAgent";
+import ConfirmationNumberOutlinedIcon from "@mui/icons-material/ConfirmationNumberOutlined";
+import ChatOutlinedIcon from "@mui/icons-material/ChatOutlined";
 import {
   projectApi,
   type ProjectItem,
@@ -35,6 +38,9 @@ import {
   type ProjectTaskItem,
   type ProjectCommentItem,
 } from "../api/projectApi";
+import { ticketService } from "@/modules/tickets/services/ticket.service";
+import type { TicketResponse } from "@/modules/tickets/types/ticket.types";
+import { TicketDetailsDrawer, TicketCreateDrawer } from "@/modules/tickets/components";
 import { BrandLoader } from "@/shared/components/ui/feedback/BrandLoader";
 import { PageLayout } from "@/shared/components/ui/layout";
 
@@ -46,6 +52,10 @@ export default function ProjectDetailPage() {
   const [milestones, setMilestones] = useState<ProjectMilestoneItem[]>([]);
   const [tasks, setTasks] = useState<ProjectTaskItem[]>([]);
   const [comments, setComments] = useState<ProjectCommentItem[]>([]);
+  const [projectTickets, setProjectTickets] = useState<TicketResponse[]>([]);
+  const [selectedTicketId, setSelectedTicketId] = useState<number | null>(null);
+  const [ticketDetailsOpen, setTicketDetailsOpen] = useState<boolean>(false);
+  const [ticketCreateOpen, setTicketCreateOpen] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
 
   // Super Admin Progress & Status Configuration
@@ -85,7 +95,8 @@ export default function ProjectDetailPage() {
       projectApi.getMilestones(id),
       projectApi.getTasks(id),
       projectApi.getComments(id),
-    ]).then(([projData, msData, taskData, commentData]) => {
+      ticketService.getTicketsByProject(Number(id)),
+    ]).then(([projData, msData, taskData, commentData, ticketData]) => {
       setProject(projData);
       if (projData) {
         setProgressVal(projData.progressPercentage || 0);
@@ -96,6 +107,7 @@ export default function ProjectDetailPage() {
       setMilestones(msData);
       setTasks(taskData);
       setComments(commentData);
+      setProjectTickets(ticketData || []);
       setLoading(false);
     });
   };
@@ -653,6 +665,127 @@ export default function ProjectDetailPage() {
               )}
             </CardContent>
           </Card>
+
+          {/* Project Support Tickets & Live Chat Helpdesk */}
+          <Card variant="outlined" sx={{ borderRadius: 2 }}>
+            <CardContent sx={{ p: 3 }}>
+              <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 2 }}>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                  <SupportAgentIcon color="primary" />
+                  <Box>
+                    <Typography variant="h6" fontWeight="bold">
+                      Project Support & Live Tickets ({projectTickets.length})
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      Client-generated tickets and live chat communications with support team.
+                    </Typography>
+                  </Box>
+                </Box>
+                <Button
+                  size="small"
+                  variant="contained"
+                  startIcon={<ConfirmationNumberOutlinedIcon />}
+                  onClick={() => setTicketCreateOpen(true)}
+                  sx={{ fontWeight: "bold" }}
+                >
+                  Raise Support Ticket
+                </Button>
+              </Box>
+              <Divider sx={{ mb: 2 }} />
+
+              {projectTickets.length === 0 ? (
+                <Box sx={{ textAlign: "center", py: 3, px: 2 }}>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+                    No support tickets currently raised for this project.
+                  </Typography>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    startIcon={<AddIcon />}
+                    onClick={() => setTicketCreateOpen(true)}
+                  >
+                    Raise First Ticket
+                  </Button>
+                </Box>
+              ) : (
+                <Box sx={{ display: "grid", gap: 1.5 }}>
+                  {projectTickets.map((t) => (
+                    <Box
+                      key={t.id}
+                      sx={{
+                        p: 2,
+                        borderRadius: 2,
+                        bgcolor: "background.paper",
+                        border: 1,
+                        borderColor: "divider",
+                        display: "flex",
+                        flexDirection: { xs: "column", sm: "row" },
+                        alignItems: { xs: "flex-start", sm: "center" },
+                        justifyContent: "space-between",
+                        gap: 1.5,
+                      }}
+                    >
+                      <Box>
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}>
+                          <Typography
+                            variant="subtitle2"
+                            fontWeight="bold"
+                            color="primary.main"
+                            sx={{ cursor: "pointer", "&:hover": { textDecoration: "underline" } }}
+                            onClick={() => {
+                              setSelectedTicketId(t.id);
+                              setTicketDetailsOpen(true);
+                            }}
+                          >
+                            {t.ticketNumber}
+                          </Typography>
+                          <Chip
+                            label={t.status}
+                            size="small"
+                            color={t.status === "RESOLVED" || t.status === "CLOSED" ? "success" : t.status === "IN_PROGRESS" ? "warning" : "primary"}
+                            sx={{ fontSize: "0.6875rem", fontWeight: "bold", height: 20 }}
+                          />
+                          <Chip
+                            label={t.priority}
+                            size="small"
+                            variant="outlined"
+                            color={t.priority === "CRITICAL" || t.priority === "HIGH" ? "error" : "default"}
+                            sx={{ fontSize: "0.6875rem", fontWeight: "bold", height: 20 }}
+                          />
+                        </Box>
+                        <Typography variant="body2" fontWeight="bold">
+                          {t.title}
+                        </Typography>
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 0.5 }}>
+                          <Typography variant="caption" color="text.secondary">
+                            Category: {t.category}
+                          </Typography>
+                          {t.assignedToName && (
+                            <Typography variant="caption" color="primary.main" fontWeight={600}>
+                              • Agent: {t.assignedToName}
+                            </Typography>
+                          )}
+                        </Box>
+                      </Box>
+
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        startIcon={<ChatOutlinedIcon />}
+                        onClick={() => {
+                          setSelectedTicketId(t.id);
+                          setTicketDetailsOpen(true);
+                        }}
+                        sx={{ fontWeight: "bold", whiteSpace: "nowrap" }}
+                      >
+                        Live Chat
+                      </Button>
+                    </Box>
+                  ))}
+                </Box>
+              )}
+            </CardContent>
+          </Card>
         </Box>
 
         {/* Right Column: Project Instructions & Client Updates */}
@@ -843,6 +976,28 @@ export default function ProjectDetailPage() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Ticket Create Drawer */}
+      <TicketCreateDrawer
+        open={ticketCreateOpen}
+        onClose={() => {
+          setTicketCreateOpen(false);
+          loadData();
+        }}
+        defaultProjectId={project ? Number(project.id) : undefined}
+        defaultProjectName={project ? project.projectName : undefined}
+      />
+
+      {/* Ticket Details & Live Chat Drawer */}
+      <TicketDetailsDrawer
+        ticketId={selectedTicketId}
+        open={ticketDetailsOpen}
+        onClose={() => {
+          setTicketDetailsOpen(false);
+          setSelectedTicketId(null);
+          loadData();
+        }}
+      />
     </PageLayout>
   );
 }

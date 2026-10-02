@@ -2,8 +2,11 @@ import { useState, useMemo } from "react";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import InputAdornment from "@mui/material/InputAdornment";
+import Chip from "@mui/material/Chip";
 import SearchIcon from "@mui/icons-material/Search";
 import ChatOutlinedIcon from "@mui/icons-material/ChatOutlined";
+import SupportAgentIcon from "@mui/icons-material/SupportAgent";
+import FolderSpecialOutlinedIcon from "@mui/icons-material/FolderSpecialOutlined";
 import { AppDataTable, type DataTableColumn } from "@/shared/components/ui/table/AppDataTable";
 import { AppTextField } from "@/shared/components/ui/form";
 import { AppStatusChip, EmptyState } from "@/shared/components/ui/feedback";
@@ -29,6 +32,8 @@ export function TicketTable({ tickets, onSelectTicket, onCreateTicket }: TicketT
         t.ticketNumber?.toLowerCase().includes(search.toLowerCase()) ||
         t.title?.toLowerCase().includes(search.toLowerCase()) ||
         t.customerName?.toLowerCase().includes(search.toLowerCase()) ||
+        t.projectName?.toLowerCase().includes(search.toLowerCase()) ||
+        t.assignedToName?.toLowerCase().includes(search.toLowerCase()) ||
         t.createdBy?.toLowerCase().includes(search.toLowerCase());
 
       const matchesStatus = statusFilter === "ALL" || t.status === statusFilter;
@@ -75,17 +80,44 @@ export function TicketTable({ tickets, onSelectTicket, onCreateTicket }: TicketT
             {row.title}
           </Typography>
           <Typography variant="caption" color="text.secondary">
-            By: {row.customerName || row.createdBy || "Anonymous Visitor"}
+            By: {row.customerName || row.createdBy || "Client Portal User"}
           </Typography>
         </Box>
       ),
     },
     {
-      field: "category",
-      headerName: "Category",
-      render: (_: any, row: TicketResponse) => (
-        <AppStatusChip status={row.category} statusType="neutral" sx={{ height: 22, fontSize: "0.7rem" }} />
-      ),
+      field: "projectName",
+      headerName: "Project",
+      render: (_: any, row: TicketResponse) =>
+        row.projectName ? (
+          <Chip
+            icon={<FolderSpecialOutlinedIcon sx={{ fontSize: "14px !important" }} />}
+            label={row.projectName}
+            size="small"
+            color="primary"
+            variant="outlined"
+            sx={{ fontWeight: 600, fontSize: "0.72rem", height: 24 }}
+          />
+        ) : (
+          <Typography variant="caption" color="text.secondary">
+            General
+          </Typography>
+        ),
+    },
+    {
+      field: "assignedToName",
+      headerName: "Assigned To",
+      render: (_: any, row: TicketResponse) =>
+        row.assignedToName ? (
+          <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+            <SupportAgentIcon sx={{ fontSize: 16, color: tokens.colors.primary.main }} />
+            <Typography variant="body2" fontWeight={600} color={tokens.colors.secondary[800]}>
+              {row.assignedToName}
+            </Typography>
+          </Box>
+        ) : (
+          <Chip label="Unassigned" size="small" sx={{ height: 22, fontSize: "0.7rem", bgcolor: tokens.colors.secondary[100] }} />
+        ),
     },
     {
       field: "priority",
@@ -145,7 +177,7 @@ export function TicketTable({ tickets, onSelectTicket, onCreateTicket }: TicketT
       >
         <Box sx={{ maxWidth: { xs: "100%", sm: 360 } }}>
           <AppTextField
-            placeholder="Search tickets by number, subject, user..."
+            placeholder="Search tickets by number, project, agent..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             InputProps={{
@@ -179,7 +211,7 @@ export function TicketTable({ tickets, onSelectTicket, onCreateTicket }: TicketT
           message={
             search || statusFilter !== "ALL"
               ? "No tickets match the selected search or filter criteria."
-              : "No customer or employee tickets have been registered yet."
+              : "No customer or project tickets have been registered yet."
           }
           actionText="Create Ticket"
           onAction={onCreateTicket}

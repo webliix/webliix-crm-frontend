@@ -8,6 +8,7 @@ import type { ApiResult } from './ApiResult';
 import { CancelablePromise } from './CancelablePromise';
 import type { OnCancel } from './CancelablePromise';
 import type { OpenAPIConfig } from './OpenAPI';
+import { env } from '@/config/env';
 
 export const isDefined = <T>(value: T | null | undefined): value is Exclude<T, null | undefined> => {
     return value !== undefined && value !== null;
@@ -93,7 +94,7 @@ const getUrl = (config: OpenAPIConfig, options: ApiRequestOptions): string => {
             return substring;
         });
 
-    let baseUrl = (config.BASE || "https://webliix-crm-backend.onrender.com").trim().replace(/\/+$/, "");
+    let baseUrl = (config.BASE || env.apiBaseUrl).trim().replace(/\/+$/, "");
     const cleanPath = path.startsWith('/') ? path : `/${path}`;
 
     const url = `${baseUrl}${cleanPath}`;

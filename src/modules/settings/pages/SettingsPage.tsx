@@ -26,6 +26,7 @@ import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import { PageLayout } from "@/shared/components/ui/layout";
 import { BrandLoader } from "@/shared/components/ui/feedback/BrandLoader";
 import { http } from "@/shared/services/http";
+import { env } from "@/config/env";
 
 interface SystemSetting {
   id?: number;
@@ -198,7 +199,7 @@ export default function SettingsPage() {
                     fullWidth
                     disabled
                     label="API Base URL"
-                    value={import.meta.env.VITE_API_BASE_URL || "http://localhost:8082"}
+                    value={env.apiBaseUrl}
                     helperText="Connected Spring Boot Backend Gateway"
                   />
                 </Box>

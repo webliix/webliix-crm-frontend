@@ -13,8 +13,13 @@ import type {
 
 export const ticketService = {
   // Authenticated endpoints
-  async getAllTickets(): Promise<TicketResponse[]> {
-    const res = await http.get("/api/v1/tickets");
+  async getAllTickets(params?: { projectId?: number; customerId?: number }): Promise<TicketResponse[]> {
+    const res = await http.get("/api/v1/tickets", { params });
+    return res.data?.data ?? [];
+  },
+
+  async getTicketsByProject(projectId: number): Promise<TicketResponse[]> {
+    const res = await http.get(`/api/v1/tickets/project/${projectId}`);
     return res.data?.data ?? [];
   },
 

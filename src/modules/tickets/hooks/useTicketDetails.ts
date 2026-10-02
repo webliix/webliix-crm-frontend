@@ -6,6 +6,7 @@ export function useTicketDetails(ticketId: number | null) {
     queryKey: ["tickets", "detail", ticketId],
     queryFn: () => (ticketId ? ticketService.getTicket(ticketId) : null),
     enabled: !!ticketId,
+    refetchInterval: 5000,
   });
 }
 
@@ -14,6 +15,6 @@ export function useTicketComments(ticketId: number | null) {
     queryKey: ["tickets", "comments", ticketId],
     queryFn: () => (ticketId ? ticketService.getComments(ticketId) : []),
     enabled: !!ticketId,
-    refetchInterval: 10 * 1000, // Poll active chat thread every 10 seconds
+    refetchInterval: 2500, // Live real-time chat polling
   });
 }
