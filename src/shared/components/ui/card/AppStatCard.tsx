@@ -1,11 +1,12 @@
 import { type ReactNode } from "react";
 import Box from "@mui/material/Box";
+import Card from "@mui/material/Card";
+import CardContent from "@mui/material/CardContent";
 import Typography from "@mui/material/Typography";
 import Chip from "@mui/material/Chip";
 import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
 import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
-import { AppCard } from "./AppCard";
 import { tokens } from "@/theme/tokens";
 
 export type TrendDirection = "up" | "down" | "neutral";
@@ -37,39 +38,29 @@ export function AppStatCard({
     switch (color) {
       case "success":
         return {
-          bg: tokens.colors.success[50],
-          text: tokens.colors.success.main,
+          color: "success.main",
           border: tokens.colors.success[200],
-          accentGradient: `linear-gradient(135deg, ${tokens.colors.success[50]} 0%, #ffffff 100%)`,
         };
       case "warning":
         return {
-          bg: tokens.colors.warning[50],
-          text: tokens.colors.warning.main,
+          color: "warning.main",
           border: tokens.colors.warning[200],
-          accentGradient: `linear-gradient(135deg, ${tokens.colors.warning[50]} 0%, #ffffff 100%)`,
         };
       case "error":
         return {
-          bg: tokens.colors.error[50],
-          text: tokens.colors.error.main,
+          color: "error.main",
           border: tokens.colors.error[200],
-          accentGradient: `linear-gradient(135deg, ${tokens.colors.error[50]} 0%, #ffffff 100%)`,
         };
       case "info":
         return {
-          bg: tokens.colors.info[50],
-          text: tokens.colors.info.main,
+          color: "info.main",
           border: tokens.colors.info[200],
-          accentGradient: `linear-gradient(135deg, ${tokens.colors.info[50]} 0%, #ffffff 100%)`,
         };
       case "primary":
       default:
         return {
-          bg: tokens.colors.primary[50],
-          text: tokens.colors.primary.main,
+          color: "primary.main",
           border: tokens.colors.primary[200],
-          accentGradient: `linear-gradient(135deg, ${tokens.colors.primary[50]} 0%, #ffffff 100%)`,
         };
     }
   };
@@ -79,22 +70,19 @@ export function AppStatCard({
     switch (trend.direction) {
       case "up":
         return {
-          bg: tokens.colors.success[50],
-          text: tokens.colors.success[700],
+          color: "success" as const,
           Icon: ArrowUpwardIcon,
         };
       case "down":
         return {
-          bg: tokens.colors.error[50],
-          text: tokens.colors.error[700],
+          color: "error" as const,
           Icon: ArrowDownwardIcon,
         };
       case "neutral":
       default:
         return {
-          bg: tokens.colors.secondary[100],
-          text: tokens.colors.secondary[700],
-          Icon: null,
+          color: "default" as const,
+          Icon: undefined,
         };
     }
   };
@@ -103,77 +91,80 @@ export function AppStatCard({
   const trendStyle = getTrendColor();
 
   return (
-    <AppCard
-      hoverable={!!onClick}
+    <Card
+      variant="outlined"
       onClick={onClick}
       sx={{
+        borderRadius: 2,
         cursor: onClick ? "pointer" : "default",
         height: "100%",
-        background: colorStyle.accentGradient,
-        border: `1px solid ${colorStyle.border}`,
-        borderRadius: tokens.borderRadius.lg,
-        p: 3,
-        position: "relative",
-        transition: "transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease",
-        "&:hover": {
-          boxShadow: tokens.shadows.md,
-          transform: "translateY(-3px)",
-        },
+        transition: "all 0.2s ease",
+        "&:hover": onClick
+          ? {
+              borderColor: colorStyle.color,
+              boxShadow: 1,
+              transform: "translateY(-2px)",
+            }
+          : undefined,
       }}
     >
-      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 2 }}>
-        <Box sx={{ flex: 1 }}>
-          <Typography
-            variant="caption"
+      <CardContent sx={{ p: 2.5, display: "flex", alignItems: "center", gap: 2.5 }}>
+        {icon && (
+          <Box
             sx={{
-              color: tokens.colors.secondary[600],
-              fontWeight: 700,
-              textTransform: "uppercase",
-              letterSpacing: "0.06em",
-              fontSize: "0.75rem",
-              display: "block",
-              mb: 0.5,
+              color: colorStyle.color,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
             }}
           >
-            {title}
-          </Typography>
+            {icon}
+          </Box>
+        )}
 
+        <Box sx={{ flex: 1, minWidth: 0 }}>
           <Typography
-            variant="h3"
+            variant="h5"
             sx={{
-              fontWeight: 800,
-              color: tokens.colors.secondary[900],
-              my: 0.5,
-              fontSize: { xs: "1.75rem", md: "2rem" },
-              letterSpacing: "-0.02em",
+              fontWeight: "bold",
+              color: colorStyle.color,
+              lineHeight: 1.2,
             }}
           >
             {value}
           </Typography>
 
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{ fontWeight: 500, mt: 0.25 }}
+            noWrap
+          >
+            {title}
+          </Typography>
+
           {subtitle && (
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, fontWeight: 500 }}>
+            <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
               {subtitle}
             </Typography>
           )}
 
           {trend && trendStyle && (
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 1.5 }}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, mt: 0.75 }}>
               <Chip
                 size="small"
-                icon={trendStyle.Icon ? <trendStyle.Icon style={{ fontSize: 13, color: trendStyle.text }} /> : undefined}
+                icon={trendStyle.Icon ? <trendStyle.Icon style={{ fontSize: 12 }} /> : undefined}
                 label={trend.value}
+                color={trendStyle.color}
                 sx={{
-                  backgroundColor: trendStyle.bg,
-                  color: trendStyle.text,
-                  fontWeight: 700,
-                  fontSize: "0.725rem",
-                  height: 22,
-                  borderRadius: tokens.borderRadius.sm,
+                  fontWeight: "bold",
+                  fontSize: "0.6875rem",
+                  height: 20,
                 }}
               />
               {trend.label && (
-                <Typography variant="caption" color="text.secondary" fontWeight={500}>
+                <Typography variant="caption" color="text.secondary">
                   {trend.label}
                 </Typography>
               )}
@@ -181,45 +172,10 @@ export function AppStatCard({
           )}
         </Box>
 
-        {icon && (
-          <Box
-            sx={{
-              width: 52,
-              height: 52,
-              borderRadius: tokens.borderRadius.md,
-              backgroundColor: "#ffffff",
-              color: colorStyle.text,
-              border: `1px solid ${colorStyle.border}`,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              flexShrink: 0,
-              boxShadow: tokens.shadows.sm,
-            }}
-          >
-            {icon}
-          </Box>
+        {onClick && (
+          <ChevronRightIcon sx={{ color: "text.secondary", fontSize: 20, flexShrink: 0 }} />
         )}
-      </Box>
-
-      {onClick && (
-        <Box
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "flex-end",
-            mt: 2,
-            pt: 1.5,
-            borderTop: `1px solid ${colorStyle.border}`,
-            color: colorStyle.text,
-            fontWeight: 700,
-            fontSize: "0.8125rem",
-          }}
-        >
-          <span>View Details</span>
-          <ChevronRightIcon sx={{ fontSize: 18, ml: 0.5 }} />
-        </Box>
-      )}
-    </AppCard>
+      </CardContent>
+    </Card>
   );
 }

@@ -18,6 +18,7 @@ import Switch from "@mui/material/Switch";
 import Alert from "@mui/material/Alert";
 import InputAdornment from "@mui/material/InputAdornment";
 import { BrandLoader } from "@/shared/components/ui/feedback/BrandLoader";
+import { PageLayout } from "@/shared/components/ui/layout";
 import FolderSpecialOutlinedIcon from "@mui/icons-material/FolderSpecialOutlined";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import CalendarTodayOutlinedIcon from "@mui/icons-material/CalendarTodayOutlined";
@@ -175,37 +176,93 @@ export default function ProjectListPage() {
     return matchesSearch && matchesStatus;
   });
 
-  return (
-    <Box sx={{ p: { xs: 2.5, md: 4 } }}>
-      {/* Page Header */}
-      <Box sx={{ mb: 4, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 2 }}>
-        <Box>
-          <Typography variant="h4" fontWeight={800} color={tokens.colors.secondary[900]} gutterBottom>
-            Projects & Client Deliverables
-          </Typography>
-          <Typography variant="body1" color="text.secondary">
-            Manage project initiation, automated lifecycle phases, client updates, and live deliverables.
-          </Typography>
-        </Box>
+  const totalCount = projects.length;
+  const inProgressCount = projects.filter((p) => p.status === "IN_PROGRESS" || p.status === "ACTIVE").length;
+  const planningCount = projects.filter((p) => p.status === "PLANNING" || p.status === "NOT_STARTED").length;
+  const completedCount = projects.filter((p) => p.status === "COMPLETED").length;
 
+  return (
+    <PageLayout
+      title="Projects & Client Deliverables"
+      subtitle="Manage project initiation, automated lifecycle phases, client updates, and live deliverables"
+      actions={
         <Button
           variant="contained"
           startIcon={<AddIcon />}
           onClick={() => setCreateDialogOpen(true)}
-          sx={{ fontWeight: 700, borderRadius: tokens.borderRadius.md, px: 2.5, py: 1 }}
+          sx={{ fontWeight: "bold" }}
         >
           Initiate New Project
         </Button>
+      }
+    >
+      {/* Metrics Row */}
+      <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", md: "repeat(4, 1fr)" }, gap: 3, mb: 3 }}>
+        <Card variant="outlined" sx={{ borderRadius: 2 }}>
+          <CardContent sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+            <FolderSpecialOutlinedIcon color="primary" sx={{ fontSize: 36 }} />
+            <Box>
+              <Typography variant="h5" fontWeight="bold">
+                {totalCount}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Total Projects
+              </Typography>
+            </Box>
+          </CardContent>
+        </Card>
+
+        <Card variant="outlined" sx={{ borderRadius: 2 }}>
+          <CardContent sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+            <HourglassEmptyOutlinedIcon color="info" sx={{ fontSize: 36 }} />
+            <Box>
+              <Typography variant="h5" fontWeight="bold" color="info.main">
+                {inProgressCount}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                In Progress
+              </Typography>
+            </Box>
+          </CardContent>
+        </Card>
+
+        <Card variant="outlined" sx={{ borderRadius: 2 }}>
+          <CardContent sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+            <CalendarTodayOutlinedIcon color="warning" sx={{ fontSize: 36 }} />
+            <Box>
+              <Typography variant="h5" fontWeight="bold" color="warning.main">
+                {planningCount}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Planning Phase
+              </Typography>
+            </Box>
+          </CardContent>
+        </Card>
+
+        <Card variant="outlined" sx={{ borderRadius: 2 }}>
+          <CardContent sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+            <CheckCircleOutlinedIcon color="success" sx={{ fontSize: 36 }} />
+            <Box>
+              <Typography variant="h5" fontWeight="bold" color="success.main">
+                {completedCount}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Completed
+              </Typography>
+            </Box>
+          </CardContent>
+        </Card>
       </Box>
 
       {/* Search and Filters Bar */}
-      <Box sx={{ mb: 4, display: "flex", gap: 2, flexWrap: "wrap", alignItems: "center" }}>
+      <Box sx={{ mb: 3, display: "flex", gap: 2, flexWrap: "wrap", alignItems: "center", justifyContent: "space-between" }}>
         <TextField
           size="small"
           placeholder="Search by project name, code, or client..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          sx={{ minWidth: 280, bgcolor: "#ffffff" }}
+          sx={{ maxWidth: 400, width: "100%" }}
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
@@ -221,21 +278,21 @@ export default function ProjectListPage() {
             clickable
             color={statusFilter === "ALL" ? "primary" : "default"}
             onClick={() => setStatusFilter("ALL")}
-            sx={{ fontWeight: 700 }}
+            sx={{ fontWeight: "bold" }}
           />
           <Chip
             label="Active & In Progress"
             clickable
             color={statusFilter === "IN_PROGRESS" ? "primary" : "default"}
             onClick={() => setStatusFilter("IN_PROGRESS")}
-            sx={{ fontWeight: 700 }}
+            sx={{ fontWeight: "bold" }}
           />
           <Chip
             label="Completed"
             clickable
             color={statusFilter === "COMPLETED" ? "primary" : "default"}
             onClick={() => setStatusFilter("COMPLETED")}
-            sx={{ fontWeight: 700 }}
+            sx={{ fontWeight: "bold" }}
           />
         </Box>
       </Box>
@@ -245,15 +302,15 @@ export default function ProjectListPage() {
           <BrandLoader message="Loading projects, phases & deliverables..." size="medium" />
         </Box>
       ) : filteredProjects.length === 0 ? (
-        <Card sx={{ borderRadius: tokens.borderRadius.lg, border: `1px solid ${tokens.colors.secondary[200]}`, p: 6, textAlign: "center" }}>
-          <FolderSpecialOutlinedIcon sx={{ fontSize: 56, color: tokens.colors.secondary[300], mb: 2 }} />
-          <Typography variant="h6" fontWeight={700} color={tokens.colors.secondary[800]} gutterBottom>
+        <Card variant="outlined" sx={{ borderRadius: 2, p: 6, textAlign: "center" }}>
+          <FolderSpecialOutlinedIcon sx={{ fontSize: 56, color: "text.secondary", mb: 2 }} />
+          <Typography variant="h6" fontWeight="bold" gutterBottom>
             No Projects Found
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 480, mx: "auto", mb: 3 }}>
             No project records match your current filter criteria. You can initiate a new project with automatic phase division above.
           </Typography>
-          <Button variant="outlined" startIcon={<AddIcon />} onClick={() => setCreateDialogOpen(true)} sx={{ fontWeight: 700 }}>
+          <Button variant="outlined" startIcon={<AddIcon />} onClick={() => setCreateDialogOpen(true)} sx={{ fontWeight: "bold" }}>
             Initiate First Project
           </Button>
         </Card>
@@ -262,16 +319,16 @@ export default function ProjectListPage() {
           {filteredProjects.map((project) => (
             <Card
               key={project.id}
+              variant="outlined"
               sx={{
                 height: "100%",
                 display: "flex",
                 flexDirection: "column",
-                borderRadius: tokens.borderRadius.lg,
-                border: `1px solid ${tokens.colors.secondary[200]}`,
-                transition: tokens.transitions.normal,
+                borderRadius: 2,
+                transition: "all 0.2s ease",
                 "&:hover": {
-                  borderColor: tokens.colors.primary[400],
-                  boxShadow: tokens.shadows.md,
+                  borderColor: "primary.main",
+                  boxShadow: 2,
                   transform: "translateY(-2px)",
                 },
               }}
@@ -281,18 +338,18 @@ export default function ProjectListPage() {
                   <Chip
                     label={project.projectCode || `PRJ-${project.id}`}
                     size="small"
-                    sx={{ bgcolor: tokens.colors.secondary[100], color: tokens.colors.secondary[700], fontWeight: 700, fontSize: "0.725rem" }}
+                    sx={{ fontWeight: "bold", fontSize: "0.725rem" }}
                   />
                   {getStatusChip(project.status)}
                 </Box>
 
                 {(project.customerName || project.customerCompanyName || project.customer?.companyName || project.customer?.contactPerson) && (
-                  <Typography variant="caption" fontWeight={700} color={tokens.colors.primary.main} sx={{ mb: 0.5, display: "block" }}>
+                  <Typography variant="caption" fontWeight="bold" color="primary.main" sx={{ mb: 0.5, display: "block" }}>
                     Client: {project.customerName || project.customerCompanyName || project.customer?.contactPerson || project.customer?.companyName}
                   </Typography>
                 )}
 
-                <Typography variant="h6" fontWeight={700} color={tokens.colors.secondary[900]} sx={{ mb: 1 }}>
+                <Typography variant="h6" fontWeight="bold" sx={{ mb: 1 }}>
                   {project.projectName}
                 </Typography>
 
@@ -315,10 +372,10 @@ export default function ProjectListPage() {
                 {/* Progress Bar */}
                 <Box sx={{ mt: "auto", pt: 2 }}>
                   <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1 }}>
-                    <Typography variant="caption" fontWeight={700} color={tokens.colors.secondary[700]}>
+                    <Typography variant="caption" fontWeight="bold" color="text.secondary">
                       Completion Progress
                     </Typography>
-                    <Typography variant="caption" fontWeight={800} color={tokens.colors.primary.main}>
+                    <Typography variant="caption" fontWeight="bold" color="primary.main">
                       {project.progressPercentage ?? 0}%
                     </Typography>
                   </Box>
@@ -326,21 +383,16 @@ export default function ProjectListPage() {
                     variant="determinate"
                     value={project.progressPercentage ?? 0}
                     sx={{
-                      height: 8,
-                      borderRadius: 4,
-                      bgcolor: tokens.colors.secondary[100],
-                      "& .MuiLinearProgress-bar": {
-                        borderRadius: 4,
-                        bgcolor: tokens.colors.primary.main,
-                      },
+                      height: 6,
+                      borderRadius: 1,
                     }}
                   />
                 </Box>
 
                 {/* Dates & Action */}
-                <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mt: 3, pt: 2, borderTop: `1px solid ${tokens.colors.secondary[100]}` }}>
+                <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mt: 3, pt: 2, borderTop: 1, borderColor: "divider" }}>
                   <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
-                    <CalendarTodayOutlinedIcon sx={{ fontSize: 16, color: tokens.colors.secondary[400] }} />
+                    <CalendarTodayOutlinedIcon sx={{ fontSize: 16, color: "text.secondary" }} />
                     <Typography variant="caption" color="text.secondary" fontWeight={500}>
                       {project.expectedEndDate ? `Due ${new Date(project.expectedEndDate).toLocaleDateString()}` : "Active Timeline"}
                     </Typography>
@@ -350,7 +402,7 @@ export default function ProjectListPage() {
                     size="small"
                     endIcon={<ArrowForwardIcon sx={{ fontSize: 14 }} />}
                     onClick={() => navigate(`/projects/${project.id}`)}
-                    sx={{ fontWeight: 700, fontSize: "0.8125rem", p: 0 }}
+                    sx={{ fontWeight: "bold", fontSize: "0.8125rem", p: 0 }}
                   >
                     View Project
                   </Button>
@@ -522,6 +574,6 @@ export default function ProjectListPage() {
           </Button>
         </DialogActions>
       </Dialog>
-    </Box>
+    </PageLayout>
   );
 }

@@ -1,63 +1,69 @@
+import Card from "@mui/material/Card";
+import CardHeader from "@mui/material/CardHeader";
+import CardContent from "@mui/material/CardContent";
+import Typography from "@mui/material/Typography";
+import Divider from "@mui/material/Divider";
 import Stack from "@mui/material/Stack";
+import Button from "@mui/material/Button";
 import PersonAddOutlinedIcon from "@mui/icons-material/PersonAddOutlined";
 import BusinessOutlinedIcon from "@mui/icons-material/BusinessOutlined";
 import AddTaskOutlinedIcon from "@mui/icons-material/AddTaskOutlined";
 import ReceiptOutlinedIcon from "@mui/icons-material/ReceiptOutlined";
-import { AppButton } from "@/shared/components/ui/button";
-import { AppCard } from "@/shared/components/ui/card";
-import { ActionGuard } from "@/shared/components/rbac/ActionGuard";
-import { permissions } from "@/shared/rbac/permissions";
+import BoltOutlinedIcon from "@mui/icons-material/BoltOutlined";
 import { useNavigate } from "react-router-dom";
-import { notificationService } from "@/shared/notifications/notification.service";
 
 export function DashboardQuickActions() {
   const navigate = useNavigate();
 
   return (
-    <AppCard
-      title="Quick Actions"
-      subtitle="Frequently used actions and workflow shortcuts"
-      padding="lg"
-    >
-      <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap sx={{ mt: 1 }}>
-        <ActionGuard permission={permissions.leads.create}>
-          <AppButton
-            appVariant="primary"
+    <Card variant="outlined" sx={{ borderRadius: 2 }}>
+      <CardHeader
+        avatar={<BoltOutlinedIcon color="primary" />}
+        title={<Typography variant="subtitle1" fontWeight="bold">Quick Actions</Typography>}
+        subheader="Workflow shortcuts & instant generation"
+        sx={{ pb: 1 }}
+      />
+      <Divider />
+      <CardContent sx={{ pt: 2.5 }}>
+        <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap>
+          <Button
+            variant="contained"
+            color="primary"
             startIcon={<PersonAddOutlinedIcon sx={{ fontSize: 18 }} />}
             onClick={() => navigate("/leads/create")}
+            sx={{ fontWeight: "bold" }}
           >
             Create Lead
-          </AppButton>
-        </ActionGuard>
+          </Button>
 
-        <ActionGuard permission={permissions.clients.create}>
-          <AppButton
-            appVariant="outlined"
+          <Button
+            variant="outlined"
             startIcon={<BusinessOutlinedIcon sx={{ fontSize: 18 }} />}
-            onClick={() => notificationService.info("Customer creation module coming soon")}
+            onClick={() => navigate("/customers")}
+            sx={{ fontWeight: "bold" }}
           >
-            Add Customer
-          </AppButton>
-        </ActionGuard>
+            Customer Hub
+          </Button>
 
-        <ActionGuard permission={permissions.projects.create}>
-          <AppButton
-            appVariant="outlined"
+          <Button
+            variant="outlined"
             startIcon={<AddTaskOutlinedIcon sx={{ fontSize: 18 }} />}
-            onClick={() => notificationService.info("Project creation module coming soon")}
+            onClick={() => navigate("/projects")}
+            sx={{ fontWeight: "bold" }}
           >
-            New Project
-          </AppButton>
-        </ActionGuard>
+            Initiate Project
+          </Button>
 
-        <AppButton
-          appVariant="outlined"
-          startIcon={<ReceiptOutlinedIcon sx={{ fontSize: 18 }} />}
-          onClick={() => notificationService.info("Invoice generation module coming soon")}
-        >
-          Create Invoice
-        </AppButton>
-      </Stack>
-    </AppCard>
+          <Button
+            variant="outlined"
+            startIcon={<ReceiptOutlinedIcon sx={{ fontSize: 18 }} />}
+            onClick={() => navigate("/invoices")}
+            sx={{ fontWeight: "bold" }}
+          >
+            Invoices & Billing
+          </Button>
+        </Stack>
+      </CardContent>
+    </Card>
   );
 }

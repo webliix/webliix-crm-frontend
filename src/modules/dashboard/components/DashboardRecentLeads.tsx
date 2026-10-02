@@ -1,9 +1,14 @@
 import Box from "@mui/material/Box";
+import Card from "@mui/material/Card";
+import CardHeader from "@mui/material/CardHeader";
+import CardContent from "@mui/material/CardContent";
 import Typography from "@mui/material/Typography";
+import Button from "@mui/material/Button";
+import Chip from "@mui/material/Chip";
+import Divider from "@mui/material/Divider";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
-import { AppCard } from "@/shared/components/ui/card";
-import { AppButton } from "@/shared/components/ui/button";
-import { AppStatusChip, EmptyState } from "@/shared/components/ui/feedback";
+import PeopleAltOutlinedIcon from "@mui/icons-material/PeopleAltOutlined";
+import AddIcon from "@mui/icons-material/Add";
 import { useDashboard } from "@/modules/dashboard/hooks/useDashboard";
 import { formatCurrency, formatDate } from "@/shared/utils/formatters";
 import { useNavigate } from "react-router-dom";
@@ -16,76 +21,92 @@ export function DashboardRecentLeads() {
   const leads = data?.recentLeads || [];
 
   return (
-    <AppCard
-      title="Recent Pipeline Leads"
-      subtitle="Newly registered sales prospects & inquiries"
-      padding="lg"
-      action={
-        <AppButton
-          appVariant="ghost"
-          appSize="sm"
-          endIcon={<ArrowForwardIcon sx={{ fontSize: 16 }} />}
-          onClick={() => navigate("/leads")}
-        >
-          View All
-        </AppButton>
-      }
-    >
-      {leads.length === 0 ? (
-        <EmptyState
-          title="No Recent Leads"
-          message="No active leads have been created yet. Register a new lead to start tracking opportunities."
-          actionText="Create Lead"
-          onAction={() => navigate("/leads/create")}
-        />
-      ) : (
-        <Box sx={{ display: "grid", gap: 1.5, mt: 1 }}>
-          {leads.slice(0, 5).map((lead) => (
-            <Box
-              key={lead.id}
-              onClick={() => navigate(`/leads`)}
-              sx={{
-                p: 2,
-                borderRadius: tokens.borderRadius.md,
-                border: `1px solid ${tokens.colors.secondary[200]}`,
-                backgroundColor: tokens.colors.secondary[50],
-                display: "flex",
-                flexDirection: { xs: "column", sm: "row" },
-                justifyContent: "space-between",
-                alignItems: { xs: "flex-start", sm: "center" },
-                gap: 1.5,
-                cursor: "pointer",
-                transition: tokens.transitions.fast,
-                "&:hover": {
-                  backgroundColor: tokens.colors.primary[50],
-                  borderColor: tokens.colors.primary[300],
-                },
-              }}
+    <Card variant="outlined" sx={{ borderRadius: 2 }}>
+      <CardHeader
+        avatar={<PeopleAltOutlinedIcon color="primary" />}
+        title={<Typography variant="subtitle1" fontWeight="bold">Recent Pipeline Leads</Typography>}
+        subheader="Newly registered sales prospects & inquiries"
+        action={
+          <Button
+            size="small"
+            endIcon={<ArrowForwardIcon sx={{ fontSize: 14 }} />}
+            onClick={() => navigate("/leads")}
+            sx={{ fontWeight: "bold" }}
+          >
+            View All
+          </Button>
+        }
+        sx={{ pb: 1 }}
+      />
+      <Divider />
+      <CardContent sx={{ pt: 2 }}>
+        {leads.length === 0 ? (
+          <Box sx={{ py: 4, textAlign: "center" }}>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              No active leads registered yet. Add a lead to start tracking opportunities.
+            </Typography>
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<AddIcon />}
+              onClick={() => navigate("/leads/create")}
             >
-              <Box>
-                <Typography variant="body2" fontWeight={700} color={tokens.colors.secondary[900]}>
-                  {lead.companyName || "Unnamed Opportunity"}
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  Contact: {lead.contactPerson || "N/A"} • {lead.email || lead.phone || "No contact info"}
-                </Typography>
-              </Box>
-
-              <Box sx={{ display: "flex", alignItems: "center", gap: 2, alignSelf: { xs: "flex-end", sm: "center" } }}>
-                {lead.estimatedValue && (
-                  <Typography variant="body2" fontWeight={700} color={tokens.colors.secondary[800]}>
-                    {formatCurrency(lead.estimatedValue)}
+              Create Lead
+            </Button>
+          </Box>
+        ) : (
+          <Box sx={{ display: "grid", gap: 1.5 }}>
+            {leads.slice(0, 5).map((lead) => (
+              <Box
+                key={lead.id}
+                onClick={() => navigate(`/leads`)}
+                sx={{
+                  p: 1.75,
+                  borderRadius: 2,
+                  border: `1px solid ${tokens.colors.secondary[200]}`,
+                  display: "flex",
+                  flexDirection: { xs: "column", sm: "row" },
+                  justifyContent: "space-between",
+                  alignItems: { xs: "flex-start", sm: "center" },
+                  gap: 1.5,
+                  cursor: "pointer",
+                  transition: "all 0.15s ease",
+                  "&:hover": {
+                    borderColor: "primary.main",
+                    backgroundColor: "action.hover",
+                  },
+                }}
+              >
+                <Box>
+                  <Typography variant="body2" fontWeight="bold" color="text.primary">
+                    {lead.companyName || "Unnamed Opportunity"}
                   </Typography>
-                )}
-                <AppStatusChip status={String(lead.status || "NEW")} />
-                <Typography variant="caption" color="text.secondary">
-                  {formatDate(lead.createdAt)}
-                </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Contact: {lead.contactPerson || "N/A"} • {lead.email || lead.phone || "No contact info"}
+                  </Typography>
+                </Box>
+
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, alignSelf: { xs: "flex-end", sm: "center" } }}>
+                  {lead.estimatedValue && (
+                    <Typography variant="body2" fontWeight="bold" color="success.main">
+                      {formatCurrency(lead.estimatedValue)}
+                    </Typography>
+                  )}
+                  <Chip
+                    label={String(lead.status || "NEW")}
+                    size="small"
+                    color={String(lead.status).toUpperCase() === "QUALIFIED" || String(lead.status).toUpperCase() === "WON" ? "success" : "primary"}
+                    sx={{ fontWeight: "bold" }}
+                  />
+                  <Typography variant="caption" color="text.secondary">
+                    {formatDate(lead.createdAt)}
+                  </Typography>
+                </Box>
               </Box>
-            </Box>
-          ))}
-        </Box>
-      )}
-    </AppCard>
+            ))}
+          </Box>
+        )}
+      </CardContent>
+    </Card>
   );
 }

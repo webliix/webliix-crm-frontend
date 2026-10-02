@@ -28,7 +28,6 @@ import EditNoteOutlinedIcon from "@mui/icons-material/EditNoteOutlined";
 import AddIcon from "@mui/icons-material/Add";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import EmailOutlinedIcon from "@mui/icons-material/EmailOutlined";
-import { tokens } from "@/theme/tokens";
 import {
   projectApi,
   type ProjectItem,
@@ -37,6 +36,7 @@ import {
   type ProjectCommentItem,
 } from "../api/projectApi";
 import { BrandLoader } from "@/shared/components/ui/feedback/BrandLoader";
+import { PageLayout } from "@/shared/components/ui/layout";
 
 export default function ProjectDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -302,23 +302,21 @@ export default function ProjectDetailPage() {
   }
 
   return (
-    <Box sx={{ p: { xs: 2.5, md: 4 } }}>
-      {/* Back Button & Action Row */}
-      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3, flexWrap: "wrap", gap: 2 }}>
-        <Button
-          startIcon={<ArrowBackIcon />}
-          onClick={() => navigate("/projects")}
-          sx={{ fontWeight: 700, color: tokens.colors.secondary[700] }}
-        >
-          Back to Projects
-        </Button>
-
+    <PageLayout
+      title={project.projectName}
+      subtitle={`Project Code: ${project.projectCode || `PRJ-${project.id}`} • Client: ${project.customerName || project.customerCompanyName || "Enterprise Client"}`}
+      breadcrumbs={[
+        { label: "Dashboard", href: "/dashboard", onClick: () => navigate("/dashboard") },
+        { label: "Projects", href: "/projects", onClick: () => navigate("/projects") },
+        { label: project.projectName },
+      ]}
+      actions={
         <Box sx={{ display: "flex", gap: 1.5 }}>
           <Button
             variant="outlined"
             startIcon={<PictureAsPdfOutlinedIcon />}
             onClick={handleExportPDF}
-            sx={{ fontWeight: 700, borderRadius: tokens.borderRadius.md }}
+            sx={{ fontWeight: "bold" }}
           >
             Export Project PDF
           </Button>
@@ -327,58 +325,53 @@ export default function ProjectDetailPage() {
             variant="outlined"
             startIcon={<EditNoteOutlinedIcon />}
             onClick={() => setDocDialogOpen(true)}
-            sx={{ fontWeight: 700, borderRadius: tokens.borderRadius.md }}
+            sx={{ fontWeight: "bold" }}
           >
             Edit Documentation
           </Button>
         </Box>
-      </Box>
-
+      }
+    >
       {/* Hero Header Card */}
-      <Card
-        sx={{
-          borderRadius: tokens.borderRadius.lg,
-          border: `1px solid ${tokens.colors.secondary[200]}`,
-          mb: 4,
-          background: `linear-gradient(135deg, #ffffff 0%, ${tokens.colors.primary[50]} 100%)`,
-        }}
-      >
-        <CardContent sx={{ p: { xs: 3, md: 4 } }}>
+      <Card variant="outlined" sx={{ borderRadius: 2, mb: 3 }}>
+        <CardContent sx={{ p: 3 }}>
           <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 2, mb: 2 }}>
             <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
               <Chip
                 label={project.projectCode || `PRJ-${project.id}`}
-                sx={{ bgcolor: tokens.colors.primary.main, color: "#ffffff", fontWeight: 800 }}
+                color="primary"
+                sx={{ fontWeight: "bold" }}
               />
-              <Typography variant="h4" fontWeight={800} color={tokens.colors.secondary[900]}>
+              <Typography variant="h5" fontWeight="bold">
                 {project.projectName}
               </Typography>
             </Box>
 
             <Chip
               label={project.status || "In Progress"}
-              sx={{ bgcolor: tokens.colors.success[100], color: tokens.colors.success[700], fontWeight: 700, px: 1 }}
+              color={project.status === "COMPLETED" ? "success" : "primary"}
+              sx={{ fontWeight: "bold", px: 1 }}
             />
           </Box>
 
           {(project.customerName || project.customerCompanyName || project.customerEmail || project.customer?.companyName) && (
-            <Box sx={{ mb: 2, p: 2, borderRadius: tokens.borderRadius.md, bgcolor: "#ffffff", border: `1px solid ${tokens.colors.secondary[200]}`, display: "flex", gap: 3, flexWrap: "wrap", alignItems: "center" }}>
-              <Typography variant="body2" fontWeight={600} color={tokens.colors.secondary[800]}>
-                Client: <strong>{project.customerName || project.customerCompanyName || project.customer?.contactPerson || project.customer?.companyName || "N/A"}</strong>
+            <Box sx={{ mb: 2, p: 2, borderRadius: 2, bgcolor: "action.hover", border: 1, borderColor: "divider", display: "flex", gap: 3, flexWrap: "wrap", alignItems: "center" }}>
+              <Typography variant="body2" fontWeight="bold">
+                Client: {project.customerName || project.customerCompanyName || project.customer?.contactPerson || project.customer?.companyName || "N/A"}
               </Typography>
               {(project.customerEmail || project.customer?.email) && (
                 <Typography variant="body2" color="text.secondary">
-                  Email: <strong>{project.customerEmail || project.customer?.email}</strong>
+                  Email: {project.customerEmail || project.customer?.email}
                 </Typography>
               )}
               {project.expectedEndDate && (
                 <Typography variant="body2" color="text.secondary">
-                  Expected Handover: <strong>{new Date(project.expectedEndDate).toLocaleDateString()}</strong>
+                  Expected Handover: {new Date(project.expectedEndDate).toLocaleDateString()}
                 </Typography>
               )}
               {project.budget && (
                 <Typography variant="body2" color="text.secondary">
-                  Budget: <strong>${project.budget.toLocaleString()}</strong>
+                  Budget: ${project.budget.toLocaleString()}
                 </Typography>
               )}
             </Box>
@@ -389,12 +382,12 @@ export default function ProjectDetailPage() {
           </Typography>
 
           {/* Progress Overview */}
-          <Box sx={{ bgcolor: "#ffffff", p: 2.5, borderRadius: tokens.borderRadius.md, border: `1px solid ${tokens.colors.secondary[200]}` }}>
+          <Box sx={{ bgcolor: "background.paper", p: 2.5, borderRadius: 2, border: 1, borderColor: "divider" }}>
             <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
-              <Typography variant="subtitle2" fontWeight={700} color={tokens.colors.secondary[800]}>
+              <Typography variant="subtitle2" fontWeight="bold" color="text.secondary">
                 Overall Project Progress
               </Typography>
-              <Typography variant="subtitle2" fontWeight={800} color={tokens.colors.primary.main}>
+              <Typography variant="subtitle2" fontWeight="bold" color="primary.main">
                 {project.progressPercentage ?? 0}%
               </Typography>
             </Box>
@@ -402,10 +395,8 @@ export default function ProjectDetailPage() {
               variant="determinate"
               value={project.progressPercentage ?? 0}
               sx={{
-                height: 10,
-                borderRadius: 5,
-                bgcolor: tokens.colors.secondary[100],
-                "& .MuiLinearProgress-bar": { borderRadius: 5, bgcolor: tokens.colors.primary.main },
+                height: 8,
+                borderRadius: 1,
               }}
             />
           </Box>
@@ -413,11 +404,11 @@ export default function ProjectDetailPage() {
       </Card>
 
       {/* Super Admin Progress & Status Configuration Panel */}
-      <Card sx={{ borderRadius: tokens.borderRadius.lg, border: `1px solid ${tokens.colors.primary[200]}`, bgcolor: tokens.colors.primary[50], mb: 4 }}>
+      <Card variant="outlined" sx={{ borderRadius: 2, mb: 3 }}>
         <CardContent sx={{ p: 3 }}>
           <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 1.5 }}>
-            <EmailOutlinedIcon sx={{ color: tokens.colors.primary.main }} />
-            <Typography variant="h6" fontWeight={800} color={tokens.colors.primary[900]}>
+            <EmailOutlinedIcon color="primary" />
+            <Typography variant="h6" fontWeight="bold">
               Super Admin Progress Control & Automated Client Notification
             </Typography>
           </Box>
@@ -426,14 +417,14 @@ export default function ProjectDetailPage() {
           </Typography>
 
           {progressSuccess && (
-            <Alert severity="success" sx={{ mb: 2.5, fontWeight: 600 }}>
+            <Alert severity="success" sx={{ mb: 2.5, fontWeight: "bold" }}>
               Project progress updated successfully! Client has been notified via email and portal.
             </Alert>
           )}
 
           <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1.2fr 0.8fr" }, gap: 3, alignItems: "center" }}>
             <Box>
-              <Typography variant="caption" fontWeight={700} color={tokens.colors.secondary[700]}>
+              <Typography variant="caption" fontWeight="bold" color="text.secondary">
                 Adjust Progress: {progressVal}%
               </Typography>
               <Slider
@@ -443,7 +434,7 @@ export default function ProjectDetailPage() {
                 step={5}
                 onChange={(_, val) => setProgressVal(val as number)}
                 valueLabelDisplay="auto"
-                sx={{ color: tokens.colors.primary.main, my: 1 }}
+                sx={{ my: 1 }}
               />
             </Box>
 
@@ -453,7 +444,6 @@ export default function ProjectDetailPage() {
               label="Project Status"
               value={statusVal}
               onChange={(e) => setStatusVal(e.target.value)}
-              sx={{ bgcolor: "#ffffff" }}
             >
               <MenuItem value="PLANNING">Planning & Initiation</MenuItem>
               <MenuItem value="IN_PROGRESS">In Progress (Active)</MenuItem>
@@ -470,13 +460,13 @@ export default function ProjectDetailPage() {
               placeholder="Add an update note for the client (e.g. Completed Phase 2 UI wireframes and database migrations)..."
               value={updateNote}
               onChange={(e) => setUpdateNote(e.target.value)}
-              sx={{ bgcolor: "#ffffff", flex: 1 }}
+              sx={{ flex: 1 }}
             />
             <Button
               variant="contained"
               disabled={updatingProgress}
               onClick={handleUpdateProgressAndNotify}
-              sx={{ fontWeight: 700, borderRadius: tokens.borderRadius.md, px: 3, whiteSpace: "nowrap" }}
+              sx={{ fontWeight: "bold", px: 3, whiteSpace: "nowrap" }}
             >
               {updatingProgress ? "Updating..." : "Post Update & Notify Client"}
             </Button>
@@ -484,16 +474,16 @@ export default function ProjectDetailPage() {
         </CardContent>
       </Card>
 
-      <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "1.1fr 0.9fr" }, gap: 4 }}>
+      <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "1.1fr 0.9fr" }, gap: 3 }}>
         {/* Left Column: Milestones, Tasks & Documentation */}
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 4 }}>
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
           {/* Milestones / Phases */}
-          <Card sx={{ borderRadius: tokens.borderRadius.lg, border: `1px solid ${tokens.colors.secondary[200]}` }}>
+          <Card variant="outlined" sx={{ borderRadius: 2 }}>
             <CardContent sx={{ p: 3 }}>
-              <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 2.5 }}>
+              <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 2 }}>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-                  <FlagOutlinedIcon sx={{ color: tokens.colors.primary.main }} />
-                  <Typography variant="h6" fontWeight={700} color={tokens.colors.secondary[900]}>
+                  <FlagOutlinedIcon color="primary" />
+                  <Typography variant="h6" fontWeight="bold">
                     Lifecycle Phases & Milestones
                   </Typography>
                 </Box>
@@ -502,27 +492,28 @@ export default function ProjectDetailPage() {
                   variant="outlined"
                   startIcon={<AddIcon />}
                   onClick={() => setMilestoneDialogOpen(true)}
-                  sx={{ fontWeight: 700 }}
+                  sx={{ fontWeight: "bold" }}
                 >
                   Add Milestone
                 </Button>
               </Box>
-              <Divider sx={{ mb: 2.5 }} />
+              <Divider sx={{ mb: 2 }} />
 
               {milestones.length === 0 ? (
                 <Typography variant="body2" color="text.secondary" sx={{ py: 2, textAlign: "center" }}>
                   No milestones configured yet for this project.
                 </Typography>
               ) : (
-                <Box sx={{ display: "grid", gap: 2 }}>
+                <Box sx={{ display: "grid", gap: 1.5 }}>
                   {milestones.map((m) => (
                     <Box
                       key={m.id}
                       sx={{
                         p: 2,
-                        borderRadius: tokens.borderRadius.md,
-                        bgcolor: m.completed ? tokens.colors.success[50] : tokens.colors.secondary[50],
-                        border: `1px solid ${m.completed ? tokens.colors.success[200] : tokens.colors.secondary[200]}`,
+                        borderRadius: 2,
+                        bgcolor: m.completed ? "action.hover" : "background.paper",
+                        border: 1,
+                        borderColor: m.completed ? "success.light" : "divider",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "space-between",
@@ -537,8 +528,7 @@ export default function ProjectDetailPage() {
                         <Box>
                           <Typography
                             variant="subtitle2"
-                            fontWeight={700}
-                            color={tokens.colors.secondary[900]}
+                            fontWeight="bold"
                             sx={{ textDecoration: m.completed ? "line-through" : "none" }}
                           >
                             {m.title || m.milestoneName}
@@ -555,7 +545,7 @@ export default function ProjectDetailPage() {
                         <Chip
                           label={`Target: ${new Date(m.dueDate).toLocaleDateString()}`}
                           size="small"
-                          sx={{ fontWeight: 600, fontSize: "0.75rem" }}
+                          sx={{ fontWeight: "bold", fontSize: "0.75rem" }}
                         />
                       )}
                     </Box>
@@ -566,12 +556,12 @@ export default function ProjectDetailPage() {
           </Card>
 
           {/* Tasks */}
-          <Card sx={{ borderRadius: tokens.borderRadius.lg, border: `1px solid ${tokens.colors.secondary[200]}` }}>
+          <Card variant="outlined" sx={{ borderRadius: 2 }}>
             <CardContent sx={{ p: 3 }}>
-              <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 2.5 }}>
+              <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 2 }}>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-                  <TaskOutlinedIcon sx={{ color: tokens.colors.primary.main }} />
-                  <Typography variant="h6" fontWeight={700} color={tokens.colors.secondary[900]}>
+                  <TaskOutlinedIcon color="primary" />
+                  <Typography variant="h6" fontWeight="bold">
                     Task Breakdown
                   </Typography>
                 </Box>
@@ -580,12 +570,12 @@ export default function ProjectDetailPage() {
                   variant="outlined"
                   startIcon={<AddIcon />}
                   onClick={() => setTaskDialogOpen(true)}
-                  sx={{ fontWeight: 700 }}
+                  sx={{ fontWeight: "bold" }}
                 >
                   Add Task
                 </Button>
               </Box>
-              <Divider sx={{ mb: 2.5 }} />
+              <Divider sx={{ mb: 2 }} />
 
               {tasks.length === 0 ? (
                 <Typography variant="body2" color="text.secondary" sx={{ py: 2, textAlign: "center" }}>
@@ -598,16 +588,17 @@ export default function ProjectDetailPage() {
                       key={t.id}
                       sx={{
                         p: 2,
-                        borderRadius: tokens.borderRadius.md,
-                        bgcolor: "#ffffff",
-                        border: `1px solid ${tokens.colors.secondary[200]}`,
+                        borderRadius: 2,
+                        bgcolor: "background.paper",
+                        border: 1,
+                        borderColor: "divider",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "space-between",
                       }}
                     >
                       <Box>
-                        <Typography variant="body2" fontWeight={600} color={tokens.colors.secondary[900]}>
+                        <Typography variant="body2" fontWeight="bold">
                           {t.title || t.taskName}
                         </Typography>
                         {t.assignedTo && (
@@ -620,7 +611,7 @@ export default function ProjectDetailPage() {
                         label={t.status || "TODO"}
                         size="small"
                         color={t.status === "DONE" ? "success" : "default"}
-                        sx={{ fontSize: "0.725rem", fontWeight: 700 }}
+                        sx={{ fontSize: "0.725rem", fontWeight: "bold" }}
                       />
                     </Box>
                   ))}
@@ -630,21 +621,21 @@ export default function ProjectDetailPage() {
           </Card>
 
           {/* Documentation & Architecture Blueprint */}
-          <Card sx={{ borderRadius: tokens.borderRadius.lg, border: `1px solid ${tokens.colors.secondary[200]}` }}>
+          <Card variant="outlined" sx={{ borderRadius: 2 }}>
             <CardContent sx={{ p: 3 }}>
-              <Typography variant="h6" fontWeight={800} color={tokens.colors.secondary[900]} gutterBottom>
+              <Typography variant="h6" fontWeight="bold" gutterBottom>
                 Project Documentation & Technical Blueprint
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
                 Technical specifications, schema diagrams, and architecture blueprints.
               </Typography>
-              <Divider sx={{ mb: 2.5 }} />
+              <Divider sx={{ mb: 2 }} />
 
-              <Box sx={{ p: 2, borderRadius: tokens.borderRadius.md, bgcolor: tokens.colors.secondary[50], border: `1px solid ${tokens.colors.secondary[200]}`, mb: 2 }}>
-                <Typography variant="caption" fontWeight={700} color="text.secondary" textTransform="uppercase">
+              <Box sx={{ p: 2, borderRadius: 2, bgcolor: "action.hover", border: 1, borderColor: "divider", mb: 2 }}>
+                <Typography variant="caption" fontWeight="bold" color="text.secondary" textTransform="uppercase">
                   Architecture Specifications
                 </Typography>
-                <Typography variant="body2" color={tokens.colors.secondary[900]} sx={{ mt: 0.5, whiteSpace: "pre-wrap" }}>
+                <Typography variant="body2" sx={{ mt: 0.5, whiteSpace: "pre-wrap" }}>
                   {project.architectureNotes || "Standard Webliix Enterprise Microservices Architecture with Spring Boot and React."}
                 </Typography>
               </Box>
@@ -655,7 +646,7 @@ export default function ProjectDetailPage() {
                   startIcon={<OpenInNewIcon />}
                   href={project.documentationUrl}
                   target="_blank"
-                  sx={{ fontWeight: 700, borderRadius: tokens.borderRadius.md }}
+                  sx={{ fontWeight: "bold" }}
                 >
                   Open Cloud Documentation Link
                 </Button>
@@ -666,12 +657,12 @@ export default function ProjectDetailPage() {
 
         {/* Right Column: Project Instructions & Client Updates */}
         <Box>
-          <Card sx={{ borderRadius: tokens.borderRadius.lg, border: `1px solid ${tokens.colors.secondary[200]}` }}>
+          <Card variant="outlined" sx={{ borderRadius: 2 }}>
             <CardContent sx={{ p: 3 }}>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 2.5 }}>
-                <ForumOutlinedIcon sx={{ color: tokens.colors.primary.main }} />
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 2 }}>
+                <ForumOutlinedIcon color="primary" />
                 <Box>
-                  <Typography variant="h6" fontWeight={700} color={tokens.colors.secondary[900]}>
+                  <Typography variant="h6" fontWeight="bold">
                     Client Instructions & Updates Stream
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
@@ -679,7 +670,7 @@ export default function ProjectDetailPage() {
                   </Typography>
                 </Box>
               </Box>
-              <Divider sx={{ mb: 2.5 }} />
+              <Divider sx={{ mb: 2 }} />
 
               {/* Input Box */}
               <Box sx={{ mb: 3 }}>
@@ -697,7 +688,7 @@ export default function ProjectDetailPage() {
                   endIcon={<SendIcon />}
                   disabled={!newComment.trim() || submittingComment}
                   onClick={handlePostComment}
-                  sx={{ borderRadius: tokens.borderRadius.md, fontWeight: 700 }}
+                  sx={{ fontWeight: "bold" }}
                 >
                   Send Team Update
                 </Button>
@@ -715,24 +706,26 @@ export default function ProjectDetailPage() {
                       key={c.id}
                       sx={{
                         p: 2,
-                        borderRadius: tokens.borderRadius.md,
-                        bgcolor: c.authorRole === "CLIENT" ? tokens.colors.primary[50] : tokens.colors.secondary[50],
-                        border: `1px solid ${c.authorRole === "CLIENT" ? tokens.colors.primary[200] : tokens.colors.secondary[200]}`,
+                        borderRadius: 2,
+                        bgcolor: c.authorRole === "CLIENT" ? "action.hover" : "background.paper",
+                        border: 1,
+                        borderColor: "divider",
                       }}
                     >
                       <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 1 }}>
                         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                          <Avatar sx={{ width: 28, height: 28, fontSize: "0.75rem", bgcolor: c.authorRole === "CLIENT" ? tokens.colors.primary.main : tokens.colors.secondary[800] }}>
+                          <Avatar sx={{ width: 28, height: 28, fontSize: "0.75rem", bgcolor: c.authorRole === "CLIENT" ? "primary.main" : "secondary.main" }}>
                             {(c.authorName || (c.authorRole === "CLIENT" ? "C" : "A")).charAt(0)}
                           </Avatar>
-                          <Typography variant="subtitle2" fontWeight={700} color={tokens.colors.secondary[900]}>
+                          <Typography variant="subtitle2" fontWeight="bold">
                             {c.authorName || (c.authorRole === "CLIENT" ? "Client Instruction" : "Webliix Lead")}
                           </Typography>
                         </Box>
                         <Chip
                           label={c.authorRole === "CLIENT" ? "Client" : "Team"}
                           size="small"
-                          sx={{ fontSize: "0.6875rem", fontWeight: 700 }}
+                          color={c.authorRole === "CLIENT" ? "primary" : "default"}
+                          sx={{ fontSize: "0.6875rem", fontWeight: "bold" }}
                         />
                       </Box>
                       <Typography variant="body2" color="text.primary" sx={{ fontSize: "0.875rem", lineHeight: 1.5 }}>
@@ -754,7 +747,7 @@ export default function ProjectDetailPage() {
 
       {/* Add Milestone Dialog */}
       <Dialog open={milestoneDialogOpen} onClose={() => setMilestoneDialogOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ fontWeight: 800 }}>Add Project Lifecycle Milestone</DialogTitle>
+        <DialogTitle sx={{ fontWeight: "bold" }}>Add Project Lifecycle Milestone</DialogTitle>
         <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, pt: 2 }}>
           <TextField
             required
@@ -783,7 +776,7 @@ export default function ProjectDetailPage() {
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
           <Button onClick={() => setMilestoneDialogOpen(false)}>Cancel</Button>
-          <Button variant="contained" onClick={handleAddMilestone} sx={{ fontWeight: 700 }}>
+          <Button variant="contained" onClick={handleAddMilestone} sx={{ fontWeight: "bold" }}>
             Save Milestone
           </Button>
         </DialogActions>
@@ -791,7 +784,7 @@ export default function ProjectDetailPage() {
 
       {/* Add Task Dialog */}
       <Dialog open={taskDialogOpen} onClose={() => setTaskDialogOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ fontWeight: 800 }}>Add Project Task</DialogTitle>
+        <DialogTitle sx={{ fontWeight: "bold" }}>Add Project Task</DialogTitle>
         <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, pt: 2 }}>
           <TextField
             required
@@ -818,7 +811,7 @@ export default function ProjectDetailPage() {
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
           <Button onClick={() => setTaskDialogOpen(false)}>Cancel</Button>
-          <Button variant="contained" onClick={handleAddTask} sx={{ fontWeight: 700 }}>
+          <Button variant="contained" onClick={handleAddTask} sx={{ fontWeight: "bold" }}>
             Save Task
           </Button>
         </DialogActions>
@@ -826,7 +819,7 @@ export default function ProjectDetailPage() {
 
       {/* Edit Documentation Dialog */}
       <Dialog open={docDialogOpen} onClose={() => setDocDialogOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ fontWeight: 800 }}>Edit Project Documentation & Specs</DialogTitle>
+        <DialogTitle sx={{ fontWeight: "bold" }}>Edit Project Documentation & Specs</DialogTitle>
         <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, pt: 2 }}>
           <TextField
             fullWidth
@@ -845,11 +838,11 @@ export default function ProjectDetailPage() {
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
           <Button onClick={() => setDocDialogOpen(false)}>Cancel</Button>
-          <Button variant="contained" onClick={handleSaveDocumentation} sx={{ fontWeight: 700 }}>
+          <Button variant="contained" onClick={handleSaveDocumentation} sx={{ fontWeight: "bold" }}>
             Save Documentation
           </Button>
         </DialogActions>
       </Dialog>
-    </Box>
+    </PageLayout>
   );
 }

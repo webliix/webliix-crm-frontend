@@ -1,14 +1,15 @@
 import Box from "@mui/material/Box";
+import Card from "@mui/material/Card";
+import CardHeader from "@mui/material/CardHeader";
+import CardContent from "@mui/material/CardContent";
 import Typography from "@mui/material/Typography";
 import Divider from "@mui/material/Divider";
 import LinearProgress from "@mui/material/LinearProgress";
+import Chip from "@mui/material/Chip";
 import ReceiptLongOutlinedIcon from "@mui/icons-material/ReceiptLongOutlined";
 import AssignmentTurnedInOutlinedIcon from "@mui/icons-material/AssignmentTurnedInOutlined";
 import SupportAgentOutlinedIcon from "@mui/icons-material/SupportAgentOutlined";
-import { AppCard } from "@/shared/components/ui/card";
-import { AppStatusChip } from "@/shared/components/ui/feedback";
 import { useDashboard } from "@/modules/dashboard/hooks/useDashboard";
-import { tokens } from "@/theme/tokens";
 
 export function DashboardOperationsOverview() {
   const { data } = useDashboard();
@@ -41,133 +42,117 @@ export function DashboardOperationsOverview() {
       sx={{
         display: "grid",
         gridTemplateColumns: { xs: "1fr", md: "repeat(3, 1fr)" },
-        gap: 2.5,
+        gap: 3,
       }}
     >
       {/* Financial Health */}
-      <AppCard
-        title={
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <ReceiptLongOutlinedIcon sx={{ color: tokens.colors.success.main, fontSize: 20 }} />
-            <span>Billing & Invoices</span>
-          </Box>
-        }
-        subtitle="Live payment collection & settlement"
-        padding="lg"
-      >
-        <Box sx={{ display: "grid", gap: 2, mt: 1 }}>
+      <Card variant="outlined" sx={{ borderRadius: 2 }}>
+        <CardHeader
+          avatar={<ReceiptLongOutlinedIcon color="success" />}
+          title={<Typography variant="subtitle1" fontWeight="bold">Billing & Invoices</Typography>}
+          subheader="Live collection & settlement rate"
+          sx={{ pb: 1 }}
+        />
+        <Divider />
+        <CardContent sx={{ display: "grid", gap: 2, pt: 2 }}>
           <Box>
             <Box sx={{ display: "flex", justifyContent: "space-between", mb: 0.75 }}>
               <Typography variant="caption" color="text.secondary">
                 Settlement Rate
               </Typography>
-              <Typography variant="caption" fontWeight={700} color={tokens.colors.success.main}>
+              <Typography variant="caption" fontWeight="bold" color="success.main">
                 {invoicePaidPct}%
               </Typography>
             </Box>
             <LinearProgress
               variant="determinate"
               value={invoicePaidPct}
-              sx={{
-                height: 6,
-                borderRadius: tokens.borderRadius.full,
-                bgcolor: tokens.colors.secondary[100],
-                "& .MuiLinearProgress-bar": {
-                  bgcolor: tokens.colors.success.main,
-                },
-              }}
+              color="success"
+              sx={{ height: 6, borderRadius: 1 }}
             />
           </Box>
 
           <Divider />
 
           <Box sx={{ display: "grid", gap: 1.25 }}>
-            <MetricRow label="Paid Invoices" value={paidInvoices} chipType="success" />
-            <MetricRow label="Pending Invoices" value={pendingInvoices} chipType="warning" />
-            <MetricRow label="Overdue Invoices" value={overdueInvoices} chipType="error" />
+            <MetricRow label="Paid Invoices" value={paidInvoices} color="success" />
+            <MetricRow label="Pending Invoices" value={pendingInvoices} color="warning" />
+            <MetricRow label="Overdue Invoices" value={overdueInvoices} color="error" />
             <MetricRow label="Total Invoices" value={totalInvoices} />
           </Box>
-        </Box>
-      </AppCard>
+        </CardContent>
+      </Card>
 
       {/* Project Execution */}
-      <AppCard
-        title={
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <AssignmentTurnedInOutlinedIcon sx={{ color: tokens.colors.info.main, fontSize: 20 }} />
-            <span>Project Milestones</span>
-          </Box>
-        }
-        subtitle="Work delivery & task completion"
-        padding="lg"
-      >
-        <Box sx={{ display: "grid", gap: 2, mt: 1 }}>
+      <Card variant="outlined" sx={{ borderRadius: 2 }}>
+        <CardHeader
+          avatar={<AssignmentTurnedInOutlinedIcon color="info" />}
+          title={<Typography variant="subtitle1" fontWeight="bold">Project Milestones</Typography>}
+          subheader="Work delivery & phase execution"
+          sx={{ pb: 1 }}
+        />
+        <Divider />
+        <CardContent sx={{ display: "grid", gap: 2, pt: 2 }}>
           <Box>
             <Box sx={{ display: "flex", justifyContent: "space-between", mb: 0.75 }}>
               <Typography variant="caption" color="text.secondary">
                 Completion Rate
               </Typography>
-              <Typography variant="caption" fontWeight={700} color={tokens.colors.info.main}>
+              <Typography variant="caption" fontWeight="bold" color="info.main">
                 {projectCompletedPct}%
               </Typography>
             </Box>
             <LinearProgress
               variant="determinate"
               value={projectCompletedPct}
-              sx={{
-                height: 6,
-                borderRadius: tokens.borderRadius.full,
-                bgcolor: tokens.colors.secondary[100],
-                "& .MuiLinearProgress-bar": {
-                  bgcolor: tokens.colors.info.main,
-                },
-              }}
+              color="info"
+              sx={{ height: 6, borderRadius: 1 }}
             />
           </Box>
 
           <Divider />
 
           <Box sx={{ display: "grid", gap: 1.25 }}>
-            <MetricRow label="In-Progress" value={inProgressProjects} chipType="info" />
-            <MetricRow label="Planning" value={planningProjects} chipType="neutral" />
-            <MetricRow label="Completed" value={completedProjects} chipType="success" />
+            <MetricRow label="In-Progress" value={inProgressProjects} color="info" />
+            <MetricRow label="Planning" value={planningProjects} color="default" />
+            <MetricRow label="Completed" value={completedProjects} color="success" />
             <MetricRow label="Active Milestones" value={proj?.activeMilestones ?? 0} />
           </Box>
-        </Box>
-      </AppCard>
+        </CardContent>
+      </Card>
 
       {/* Support & SLA */}
-      <AppCard
-        title={
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <SupportAgentOutlinedIcon sx={{ color: tokens.colors.warning.main, fontSize: 20 }} />
-            <span>Support & Tickets</span>
-          </Box>
-        }
-        subtitle="Customer issues and SLA tracking"
-        padding="lg"
-      >
-        <Box sx={{ display: "grid", gap: 2, mt: 1 }}>
+      <Card variant="outlined" sx={{ borderRadius: 2 }}>
+        <CardHeader
+          avatar={<SupportAgentOutlinedIcon color="warning" />}
+          title={<Typography variant="subtitle1" fontWeight="bold">Support & Tickets</Typography>}
+          subheader="Customer issues and SLA tracking"
+          sx={{ pb: 1 }}
+        />
+        <Divider />
+        <CardContent sx={{ display: "grid", gap: 2, pt: 2 }}>
           <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <Typography variant="caption" color="text.secondary">
-              Open Queue
+            <Typography variant="body2" color="text.secondary">
+              Queue Status
             </Typography>
-            <AppStatusChip
-              status={criticalTickets > 0 ? `${criticalTickets} CRITICAL` : "STABLE"}
-              statusType={criticalTickets > 0 ? "error" : "success"}
+            <Chip
+              label={criticalTickets > 0 ? `${criticalTickets} CRITICAL` : "STABLE"}
+              color={criticalTickets > 0 ? "error" : "success"}
+              size="small"
+              sx={{ fontWeight: "bold" }}
             />
           </Box>
 
           <Divider />
 
           <Box sx={{ display: "grid", gap: 1.25 }}>
-            <MetricRow label="New / Open" value={openTickets} chipType="info" />
-            <MetricRow label="In-Progress" value={inProgressTickets} chipType="warning" />
-            <MetricRow label="Resolved" value={resolvedTickets} chipType="success" />
-            <MetricRow label="Critical Priority" value={criticalTickets} chipType="error" />
+            <MetricRow label="New / Open" value={openTickets} color="info" />
+            <MetricRow label="In-Progress" value={inProgressTickets} color="warning" />
+            <MetricRow label="Resolved" value={resolvedTickets} color="success" />
+            <MetricRow label="Critical Priority" value={criticalTickets} color="error" />
           </Box>
-        </Box>
-      </AppCard>
+        </CardContent>
+      </Card>
     </Box>
   );
 }
@@ -175,21 +160,21 @@ export function DashboardOperationsOverview() {
 function MetricRow({
   label,
   value,
-  chipType,
+  color,
 }: {
   label: string;
   value: number | string;
-  chipType?: "success" | "warning" | "error" | "info" | "neutral" | "primary";
+  color?: "success" | "warning" | "error" | "info" | "default";
 }) {
   return (
     <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
       <Typography variant="body2" color="text.secondary">
         {label}
       </Typography>
-      {chipType ? (
-        <AppStatusChip status={String(value)} statusType={chipType} sx={{ minWidth: 28 }} />
+      {color ? (
+        <Chip label={String(value)} color={color} size="small" sx={{ fontWeight: "bold", minWidth: 28, height: 22 }} />
       ) : (
-        <Typography variant="body2" fontWeight={600} color={tokens.colors.secondary[900]}>
+        <Typography variant="body2" fontWeight="bold" color="text.primary">
           {value}
         </Typography>
       )}
