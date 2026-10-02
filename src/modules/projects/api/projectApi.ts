@@ -84,9 +84,9 @@ export interface ProjectCommentItem {
 }
 
 export const projectApi = {
-  async getProjects(page = 0, size = 20): Promise<{ content: ProjectItem[]; totalElements: number }> {
+  async getProjects(page = 0, size = 20, customerId?: number): Promise<{ content: ProjectItem[]; totalElements: number }> {
     try {
-      const res = await http.get(`/api/v1/projects`, { params: { page, size } });
+      const res = await http.get(`/api/v1/projects`, { params: { page, size, customerId } });
       const data = res.data?.data;
       if (Array.isArray(data)) {
         return { content: data, totalElements: data.length };
