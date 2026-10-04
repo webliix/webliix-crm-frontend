@@ -25,10 +25,51 @@ export interface InvoiceItem {
   updatedAt?: string;
 }
 
+export interface CreateInvoicePayload {
+  customerId?: number;
+  projectId?: number;
+  issueDate?: string;
+  dueDate?: string;
+  taxAmount?: number;
+  discountAmount?: number;
+  notes?: string;
+  items: {
+    itemName: string;
+    description?: string;
+    quantity: number;
+    unitPrice: number;
+  }[];
+}
+
+export interface RecordPaymentPayload {
+  amount: number;
+  paymentDate?: string;
+  paymentMethod?: string;
+  referenceNumber?: string;
+  notes?: string;
+}
+
+export interface ProjectBillingSummary {
+  projectId: number;
+  projectCode: string;
+  projectName: string;
+  customerId: number;
+  customerName: string;
+  customerCompanyName: string;
+  budget: number;
+  totalBilled: number;
+  totalPaid: number;
+  pendingDueOnInvoices: number;
+  remainingProjectBalance: number;
+  unbilledContractAmount: number;
+  invoices: InvoiceItem[];
+  paymentSubmissions: any[];
+}
+
 export const invoiceApi = {
-  async getInvoices(page = 0, size = 20): Promise<{ content: InvoiceItem[]; totalElements: number }> {
+  async getInvoices(page = 0, size = 20, projectId?: number, customerId?: number): Promise<{ content: InvoiceItem[]; totalElements: number }> {
     try {
-      const res = await http.get(`/api/v1/invoices`, { params: { page, size } });
+      const res = await http.get(`/api/v1/invoices`, { params: { page, size, projectId, customerId } });
       const data = res.data?.data;
       if (Array.isArray(data)) {
         return { content: data, totalElements: data.length };
@@ -50,4 +91,35 @@ export const invoiceApi = {
       return null;
     }
   },
+
+  async createInvoice(payload: CreateInvoicePayload): Promise<InvoiceItem | null> {
+    const res = await http.post(`/api/v1/invoices`, payload);
+    return res.data?.data ?? null;
+  },
+
+  async recordPayment(invoiceId: number | string, payload: RecordPaymentPayload): Promise<any> {
+    const res = await http.post(`/api/v1/invoices/${invoiceId}/payments`, payload);
+    return res.data?.data ?? null;
+  },
+
+  async getProjectBilling(projectId: number | string): Promise<ProjectBillingSummary | null> {
+    try {
+      const res = await http.get(`/api/v1/projects/${projectId}/billing`);
+      return res.data?.data ?? null;
+    } catch {
+      return null;
+    }
+  },
+
+  async getProjectInvoices(projectId: number | string): Promise<InvoiceItem[]> {
+    try {
+      const res = await http.get(`/api/v1/projects/${projectId}/invoices`);
+      const data = res.data?.data;
+      if (Array.isArray(data)) return data;
+      return data?.content ?? [];
+    } catch {
+      return [];
+    }
+  },
 };
+

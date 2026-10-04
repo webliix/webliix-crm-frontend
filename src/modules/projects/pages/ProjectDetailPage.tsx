@@ -18,6 +18,14 @@ import DialogContent from "@mui/material/DialogContent";
 import DialogActions from "@mui/material/DialogActions";
 import Alert from "@mui/material/Alert";
 import Checkbox from "@mui/material/Checkbox";
+import Table from "@mui/material/Table";
+import TableBody from "@mui/material/TableBody";
+import TableCell from "@mui/material/TableCell";
+import TableContainer from "@mui/material/TableContainer";
+import TableHead from "@mui/material/TableHead";
+import TableRow from "@mui/material/TableRow";
+import IconButton from "@mui/material/IconButton";
+import CircularProgress from "@mui/material/CircularProgress";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import SendIcon from "@mui/icons-material/Send";
 import FlagOutlinedIcon from "@mui/icons-material/FlagOutlined";
@@ -32,6 +40,10 @@ import SupportAgentIcon from "@mui/icons-material/SupportAgent";
 import ConfirmationNumberOutlinedIcon from "@mui/icons-material/ConfirmationNumberOutlined";
 import ChatOutlinedIcon from "@mui/icons-material/ChatOutlined";
 import FolderSharedOutlinedIcon from "@mui/icons-material/FolderSharedOutlined";
+import AccountBalanceWalletOutlinedIcon from "@mui/icons-material/AccountBalanceWalletOutlined";
+import ReceiptLongOutlinedIcon from "@mui/icons-material/ReceiptLongOutlined";
+import PaymentOutlinedIcon from "@mui/icons-material/PaymentOutlined";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import {
   projectApi,
   type ProjectItem,
@@ -39,6 +51,7 @@ import {
   type ProjectTaskItem,
   type ProjectCommentItem,
 } from "../api/projectApi";
+import { invoiceApi, type ProjectBillingSummary, type InvoiceItem } from "@/modules/invoices/api/invoiceApi";
 import { ticketService } from "@/modules/tickets/services/ticket.service";
 import type { TicketResponse } from "@/modules/tickets/types/ticket.types";
 import { TicketDetailsDrawer, TicketCreateDrawer } from "@/modules/tickets/components";
@@ -91,6 +104,27 @@ export default function ProjectDetailPage() {
   const [docUrl, setDocUrl] = useState<string>("");
   const [archNotes, setArchNotes] = useState<string>("");
 
+  // Project Billing State
+  const [projectBilling, setProjectBilling] = useState<ProjectBillingSummary | null>(null);
+  const [invoiceDialogOpen, setInvoiceDialogOpen] = useState<boolean>(false);
+  const [newInvoiceItems, setNewInvoiceItems] = useState<{ itemName: string; description: string; quantity: number; unitPrice: number }[]>([
+    { itemName: "Project Milestone Phase 1 Deliverable", description: "", quantity: 1, unitPrice: 0 },
+  ]);
+  const [newInvoiceTax, setNewInvoiceTax] = useState<number>(0);
+  const [newInvoiceDiscount, setNewInvoiceDiscount] = useState<number>(0);
+  const [newInvoiceNotes, setNewInvoiceNotes] = useState<string>("");
+  const [submittingInvoice, setSubmittingInvoice] = useState<boolean>(false);
+  const [invoiceSuccessMsg, setInvoiceSuccessMsg] = useState<string | null>(null);
+
+  // Record Payment Dialog State
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState<boolean>(false);
+  const [paymentInvoice, setPaymentInvoice] = useState<InvoiceItem | null>(null);
+  const [paymentAmount, setPaymentAmount] = useState<number>(0);
+  const [paymentMethod, setPaymentMethod] = useState<string>("BANK_TRANSFER");
+  const [paymentRef, setPaymentRef] = useState<string>("");
+  const [paymentNotes, setPaymentNotes] = useState<string>("");
+  const [submittingPayment, setSubmittingPayment] = useState<boolean>(false);
+
   const loadData = () => {
     if (!id) return;
     setLoading(true);
@@ -102,7 +136,8 @@ export default function ProjectDetailPage() {
       projectApi.getComments(id),
       ticketService.getTicketsByProject(Number(id)),
       documentService.getDocuments({ module: "PROJECT", referenceId: Number(id) }),
-    ]).then(([projData, msData, taskData, commentData, ticketData, docData]) => {
+      invoiceApi.getProjectBilling(id),
+    ]).then(([projData, msData, taskData, commentData, ticketData, docData, billingData]) => {
       setProject(projData);
       if (projData) {
         setProgressVal(projData.progressPercentage || 0);
@@ -115,6 +150,7 @@ export default function ProjectDetailPage() {
       setComments(commentData);
       setProjectTickets(ticketData || []);
       setProjectDocuments(docData || []);
+      setProjectBilling(billingData);
       setLoading(false);
     });
   };
@@ -204,6 +240,101 @@ export default function ProjectDetailPage() {
       setProject({ ...project, documentationUrl: docUrl, architectureNotes: archNotes });
     }
     setDocDialogOpen(false);
+  };
+
+  const handleOpenCreateInvoice = () => {
+    setNewInvoiceItems([
+      { itemName: "Project Milestone Deliverable", description: `Deliverable for ${project?.projectName || ""}`, quantity: 1, unitPrice: 0 },
+    ]);
+    setNewInvoiceTax(0);
+    setNewInvoiceDiscount(0);
+    setNewInvoiceNotes("");
+    setInvoiceSuccessMsg(null);
+    setInvoiceDialogOpen(true);
+  };
+
+  const handleAddInvoiceItem = () => {
+    setNewInvoiceItems((prev) => [...prev, { itemName: "", description: "", quantity: 1, unitPrice: 0 }]);
+  };
+
+  const handleRemoveInvoiceItem = (index: number) => {
+    setNewInvoiceItems((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleInvoiceItemChange = (index: number, field: string, value: any) => {
+    setNewInvoiceItems((prev) => {
+      const copy = [...prev];
+      copy[index] = { ...copy[index], [field]: value };
+      return copy;
+    });
+  };
+
+  const invoiceSubtotal = newInvoiceItems.reduce((acc, it) => acc + (Number(it.quantity) || 0) * (Number(it.unitPrice) || 0), 0);
+  const invoiceTotal = Math.max(0, invoiceSubtotal + (Number(newInvoiceTax) || 0) - (Number(newInvoiceDiscount) || 0));
+
+  const handleCreateInvoiceSubmit = async () => {
+    if (!project) return;
+    if (newInvoiceItems.length === 0 || newInvoiceItems.some((i) => !i.itemName.trim() || Number(i.unitPrice) <= 0)) {
+      alert("Please ensure all items have a name and a positive unit price.");
+      return;
+    }
+    setSubmittingInvoice(true);
+    try {
+      const res = await invoiceApi.createInvoice({
+        projectId: Number(project.id),
+        customerId: project.customerId || project.customer?.id,
+        items: newInvoiceItems,
+        taxAmount: Number(newInvoiceTax) || 0,
+        discountAmount: Number(newInvoiceDiscount) || 0,
+        notes: newInvoiceNotes,
+      });
+      if (res) {
+        setInvoiceSuccessMsg("Project invoice generated and billed successfully!");
+        const updatedBilling = await invoiceApi.getProjectBilling(project.id);
+        setProjectBilling(updatedBilling);
+        setTimeout(() => {
+          setInvoiceDialogOpen(false);
+          setInvoiceSuccessMsg(null);
+        }, 1500);
+      }
+    } catch (err: any) {
+      alert(err?.response?.data?.message || "Failed to generate project invoice.");
+    } finally {
+      setSubmittingInvoice(false);
+    }
+  };
+
+  const handleOpenRecordPayment = (inv: InvoiceItem) => {
+    setPaymentInvoice(inv);
+    setPaymentAmount(inv.pendingAmount || 0);
+    setPaymentMethod("BANK_TRANSFER");
+    setPaymentRef("");
+    setPaymentNotes("");
+    setPaymentDialogOpen(true);
+  };
+
+  const handleRecordPaymentSubmit = async () => {
+    if (!paymentInvoice || !project) return;
+    if (Number(paymentAmount) <= 0) {
+      alert("Please enter a valid payment amount.");
+      return;
+    }
+    setSubmittingPayment(true);
+    try {
+      await invoiceApi.recordPayment(paymentInvoice.id, {
+        amount: Number(paymentAmount),
+        paymentMethod,
+        referenceNumber: paymentRef,
+        notes: paymentNotes,
+      });
+      const updatedBilling = await invoiceApi.getProjectBilling(project.id);
+      setProjectBilling(updatedBilling);
+      setPaymentDialogOpen(false);
+    } catch (err: any) {
+      alert(err?.response?.data?.message || "Failed to record payment.");
+    } finally {
+      setSubmittingPayment(false);
+    }
   };
 
   // Structured PDF Export Function
@@ -490,6 +621,144 @@ export default function ProjectDetailPage() {
               {updatingProgress ? "Updating..." : "Post Update & Notify Client"}
             </Button>
           </Box>
+        </CardContent>
+      </Card>
+
+      {/* Project Invoices, Billing & Financial Health */}
+      <Card variant="outlined" sx={{ borderRadius: 2, mb: 3 }}>
+        <CardContent sx={{ p: 3 }}>
+          <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 2, mb: 2 }}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+              <AccountBalanceWalletOutlinedIcon color="primary" />
+              <Typography variant="h6" fontWeight="bold">
+                Project Invoices & Financial Health
+              </Typography>
+            </Box>
+            <Box sx={{ display: "flex", gap: 1.5 }}>
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={handleOpenCreateInvoice}
+                sx={{ fontWeight: "bold" }}
+              >
+                Create Project Invoice
+              </Button>
+            </Box>
+          </Box>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+            Manage client billing, issue milestone invoices, and track payments recorded against this project.
+          </Typography>
+
+          {/* Financial KPI Summary Cards */}
+          <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", md: "repeat(5, 1fr)" }, gap: 2, mb: 3 }}>
+            <Box sx={{ p: 2, borderRadius: 2, bgcolor: "action.hover", border: 1, borderColor: "divider" }}>
+              <Typography variant="caption" fontWeight="bold" color="text.secondary" textTransform="uppercase">
+                Contract Budget
+              </Typography>
+              <Typography variant="h6" fontWeight="bold" sx={{ mt: 0.5 }}>
+                {projectBilling?.budget ? `₹${projectBilling.budget.toLocaleString()}` : (project.budget ? `₹${project.budget.toLocaleString()}` : "Custom Scope")}
+              </Typography>
+            </Box>
+
+            <Box sx={{ p: 2, borderRadius: 2, bgcolor: "action.hover", border: 1, borderColor: "divider" }}>
+              <Typography variant="caption" fontWeight="bold" color="primary.main" textTransform="uppercase">
+                Total Invoiced
+              </Typography>
+              <Typography variant="h6" fontWeight="bold" color="primary.main" sx={{ mt: 0.5 }}>
+                ₹{(projectBilling?.totalBilled || 0).toLocaleString()}
+              </Typography>
+            </Box>
+
+            <Box sx={{ p: 2, borderRadius: 2, bgcolor: "action.hover", border: 1, borderColor: "divider" }}>
+              <Typography variant="caption" fontWeight="bold" color="success.main" textTransform="uppercase">
+                Total Paid
+              </Typography>
+              <Typography variant="h6" fontWeight="bold" sx={{ color: "success.main", mt: 0.5 }}>
+                ₹{(projectBilling?.totalPaid || 0).toLocaleString()}
+              </Typography>
+            </Box>
+
+            <Box sx={{ p: 2, borderRadius: 2, bgcolor: "action.hover", border: 1, borderColor: "divider" }}>
+              <Typography variant="caption" fontWeight="bold" color="warning.main" textTransform="uppercase">
+                Pending Due
+              </Typography>
+              <Typography variant="h6" fontWeight="bold" sx={{ color: "warning.main", mt: 0.5 }}>
+                ₹{(projectBilling?.pendingDueOnInvoices || 0).toLocaleString()}
+              </Typography>
+            </Box>
+
+            <Box sx={{ p: 2, borderRadius: 2, bgcolor: "action.hover", border: 1, borderColor: "divider" }}>
+              <Typography variant="caption" fontWeight="bold" color="text.secondary" textTransform="uppercase">
+                Remaining Balance
+              </Typography>
+              <Typography variant="h6" fontWeight="bold" sx={{ mt: 0.5 }}>
+                ₹{(projectBilling?.remainingProjectBalance || 0).toLocaleString()}
+              </Typography>
+            </Box>
+          </Box>
+
+          {/* Project Invoices Table */}
+          {projectBilling?.invoices && projectBilling.invoices.length > 0 ? (
+            <TableContainer sx={{ border: 1, borderColor: "divider", borderRadius: 2 }}>
+              <Table size="small">
+                <TableHead sx={{ bgcolor: "action.hover" }}>
+                  <TableRow>
+                    <TableCell sx={{ fontWeight: "bold" }}>Invoice #</TableCell>
+                    <TableCell sx={{ fontWeight: "bold" }}>Issue Date</TableCell>
+                    <TableCell sx={{ fontWeight: "bold" }}>Due Date</TableCell>
+                    <TableCell sx={{ fontWeight: "bold" }}>Total Amount</TableCell>
+                    <TableCell sx={{ fontWeight: "bold" }}>Paid</TableCell>
+                    <TableCell sx={{ fontWeight: "bold" }}>Pending Due</TableCell>
+                    <TableCell sx={{ fontWeight: "bold" }}>Status</TableCell>
+                    <TableCell sx={{ fontWeight: "bold", textAlign: "right" }}>Actions</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {projectBilling.invoices.map((inv) => (
+                    <TableRow key={inv.id} hover>
+                      <TableCell sx={{ fontWeight: "bold", color: "primary.main" }}>
+                        {inv.invoiceNumber}
+                      </TableCell>
+                      <TableCell>{inv.issueDate ? new Date(inv.issueDate).toLocaleDateString() : "—"}</TableCell>
+                      <TableCell>{inv.dueDate ? new Date(inv.dueDate).toLocaleDateString() : "—"}</TableCell>
+                      <TableCell sx={{ fontWeight: "bold" }}>₹{(inv.totalAmount || 0).toLocaleString()}</TableCell>
+                      <TableCell sx={{ color: "success.main", fontWeight: "bold" }}>₹{(inv.paidAmount || 0).toLocaleString()}</TableCell>
+                      <TableCell sx={{ color: inv.pendingAmount > 0 ? "warning.main" : "text.secondary", fontWeight: "bold" }}>
+                        ₹{(inv.pendingAmount || 0).toLocaleString()}
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={inv.status}
+                          size="small"
+                          color={inv.status === "PAID" ? "success" : inv.status === "PARTIALLY_PAID" ? "info" : "warning"}
+                          sx={{ fontWeight: "bold" }}
+                        />
+                      </TableCell>
+                      <TableCell sx={{ textAlign: "right" }}>
+                        {inv.status !== "PAID" && (
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            startIcon={<PaymentOutlinedIcon />}
+                            onClick={() => handleOpenRecordPayment(inv)}
+                            sx={{ fontWeight: "bold" }}
+                          >
+                            Record Payment
+                          </Button>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          ) : (
+            <Box sx={{ p: 3, textAlign: "center", bgcolor: "action.hover", borderRadius: 2, border: "1px dashed", borderColor: "divider" }}>
+              <Typography variant="body2" color="text.secondary">
+                No invoices have been issued for this project yet. Click &quot;Create Project Invoice&quot; to bill the customer.
+              </Typography>
+            </Box>
+          )}
         </CardContent>
       </Card>
 
@@ -1008,6 +1277,212 @@ export default function ProjectDetailPage() {
           <Button onClick={() => setDocDialogOpen(false)}>Cancel</Button>
           <Button variant="contained" onClick={handleSaveDocumentation} sx={{ fontWeight: "bold" }}>
             Save Documentation
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Create Project Invoice Dialog */}
+      <Dialog
+        open={invoiceDialogOpen}
+        onClose={() => !submittingInvoice && setInvoiceDialogOpen(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle sx={{ fontWeight: "bold" }}>
+          Generate & Issue Project Invoice
+        </DialogTitle>
+        <DialogContent dividers sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
+          {invoiceSuccessMsg && <Alert severity="success">{invoiceSuccessMsg}</Alert>}
+
+          <Box sx={{ p: 2, bgcolor: "action.hover", borderRadius: 2, display: "flex", gap: 3, flexWrap: "wrap" }}>
+            <Typography variant="body2">
+              Project: <strong>{project?.projectName} ({project?.projectCode})</strong>
+            </Typography>
+            <Typography variant="body2">
+              Customer: <strong>{project?.customerCompanyName || project?.customerName || "Enterprise Client"}</strong>
+            </Typography>
+          </Box>
+
+          <Typography variant="subtitle2" fontWeight="bold">
+            Invoice Line Items
+          </Typography>
+
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+            {newInvoiceItems.map((item, idx) => (
+              <Box key={idx} sx={{ display: "flex", gap: 1, alignItems: "center", p: 1.5, border: 1, borderColor: "divider", borderRadius: 2 }}>
+                <TextField
+                  label="Item Name / Phase"
+                  size="small"
+                  value={item.itemName}
+                  onChange={(e) => handleInvoiceItemChange(idx, "itemName", e.target.value)}
+                  sx={{ flex: 2 }}
+                />
+                <TextField
+                  label="Description"
+                  size="small"
+                  value={item.description}
+                  onChange={(e) => handleInvoiceItemChange(idx, "description", e.target.value)}
+                  sx={{ flex: 2 }}
+                />
+                <TextField
+                  label="Qty"
+                  type="number"
+                  size="small"
+                  value={item.quantity}
+                  onChange={(e) => handleInvoiceItemChange(idx, "quantity", Number(e.target.value))}
+                  sx={{ width: 90 }}
+                />
+                <TextField
+                  label="Unit Price (₹)"
+                  type="number"
+                  size="small"
+                  value={item.unitPrice}
+                  onChange={(e) => handleInvoiceItemChange(idx, "unitPrice", Number(e.target.value))}
+                  sx={{ width: 120 }}
+                />
+                <Typography variant="body2" fontWeight="bold" sx={{ width: 100, textAlign: "right" }}>
+                  ₹{((Number(item.quantity) || 0) * (Number(item.unitPrice) || 0)).toLocaleString()}
+                </Typography>
+                <IconButton size="small" color="error" onClick={() => handleRemoveInvoiceItem(idx)} disabled={newInvoiceItems.length === 1}>
+                  <DeleteOutlineIcon fontSize="small" />
+                </IconButton>
+              </Box>
+            ))}
+            <Button startIcon={<AddIcon />} onClick={handleAddInvoiceItem} sx={{ alignSelf: "flex-start", fontWeight: "bold" }}>
+              Add Line Item
+            </Button>
+          </Box>
+
+          <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2 }}>
+            <TextField
+              label="Tax Amount (₹)"
+              type="number"
+              size="small"
+              value={newInvoiceTax}
+              onChange={(e) => setNewInvoiceTax(Number(e.target.value))}
+            />
+            <TextField
+              label="Discount Amount (₹)"
+              type="number"
+              size="small"
+              value={newInvoiceDiscount}
+              onChange={(e) => setNewInvoiceDiscount(Number(e.target.value))}
+            />
+          </Box>
+
+          <TextField
+            label="Invoice Notes & Payment Instructions"
+            multiline
+            rows={2}
+            fullWidth
+            size="small"
+            value={newInvoiceNotes}
+            onChange={(e) => setNewInvoiceNotes(e.target.value)}
+          />
+
+          <Box sx={{ p: 2, bgcolor: "primary.50", borderRadius: 2, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <Typography variant="subtitle1" fontWeight="bold" color="primary.main">
+              Total Invoice Amount
+            </Typography>
+            <Typography variant="h5" fontWeight="bold" color="primary.main">
+              ₹{invoiceTotal.toLocaleString()}
+            </Typography>
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ p: 2 }}>
+          <Button onClick={() => setInvoiceDialogOpen(false)} disabled={submittingInvoice}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleCreateInvoiceSubmit}
+            disabled={submittingInvoice || invoiceTotal <= 0}
+            startIcon={submittingInvoice ? <CircularProgress size={16} /> : <ReceiptLongOutlinedIcon />}
+            sx={{ fontWeight: "bold" }}
+          >
+            {submittingInvoice ? "Generating..." : "Generate Invoice"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Record Payment Dialog */}
+      <Dialog
+        open={paymentDialogOpen}
+        onClose={() => !submittingPayment && setPaymentDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle sx={{ fontWeight: "bold" }}>
+          Record Payment for Invoice {paymentInvoice?.invoiceNumber}
+        </DialogTitle>
+        <DialogContent dividers sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          <Box sx={{ p: 2, bgcolor: "action.hover", borderRadius: 2 }}>
+            <Typography variant="body2" color="text.secondary">
+              Total Invoice: <strong>₹{(paymentInvoice?.totalAmount || 0).toLocaleString()}</strong>
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Already Paid: <strong>₹{(paymentInvoice?.paidAmount || 0).toLocaleString()}</strong>
+            </Typography>
+            <Typography variant="body2" fontWeight="bold" color="warning.main">
+              Pending Balance: ₹{(paymentInvoice?.pendingAmount || 0).toLocaleString()}
+            </Typography>
+          </Box>
+
+          <TextField
+            label="Payment Amount (₹)"
+            type="number"
+            fullWidth
+            size="small"
+            value={paymentAmount}
+            onChange={(e) => setPaymentAmount(Number(e.target.value))}
+          />
+
+          <TextField
+            select
+            label="Payment Method"
+            fullWidth
+            size="small"
+            value={paymentMethod}
+            onChange={(e) => setPaymentMethod(e.target.value)}
+          >
+            <MenuItem value="BANK_TRANSFER">Bank Wire / NEFT / IMPS</MenuItem>
+            <MenuItem value="CREDIT_CARD">Credit / Debit Card</MenuItem>
+            <MenuItem value="UPI">UPI / Digital Wallet</MenuItem>
+            <MenuItem value="CASH">Cash</MenuItem>
+            <MenuItem value="CHEQUE">Cheque</MenuItem>
+          </TextField>
+
+          <TextField
+            label="Transaction / Reference Number"
+            fullWidth
+            size="small"
+            placeholder="e.g. UTR / Transaction ID"
+            value={paymentRef}
+            onChange={(e) => setPaymentRef(e.target.value)}
+          />
+
+          <TextField
+            label="Notes"
+            multiline
+            rows={2}
+            fullWidth
+            size="small"
+            value={paymentNotes}
+            onChange={(e) => setPaymentNotes(e.target.value)}
+          />
+        </DialogContent>
+        <DialogActions sx={{ p: 2 }}>
+          <Button onClick={() => setPaymentDialogOpen(false)} disabled={submittingPayment}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleRecordPaymentSubmit}
+            disabled={submittingPayment || paymentAmount <= 0}
+            startIcon={submittingPayment ? <CircularProgress size={16} /> : <PaymentOutlinedIcon />}
+            sx={{ fontWeight: "bold" }}
+          >
+            {submittingPayment ? "Recording..." : "Confirm & Apply Payment"}
           </Button>
         </DialogActions>
       </Dialog>
