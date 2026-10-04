@@ -9,8 +9,13 @@ export function useConvertLead() {
   return useMutation({
     mutationFn: (id: number) => leadService.convert(id),
     onSuccess: () => {
-      notificationService.success("Lead converted successfully");
+      notificationService.success("Lead successfully converted into an active customer account");
       queryClient.invalidateQueries({ queryKey: leadQueryKeys.all });
+      queryClient.invalidateQueries({ queryKey: ["customers"] });
+    },
+    onError: (err: any) => {
+      const msg = err?.response?.data?.message || err?.message || "Failed to convert lead";
+      notificationService.error(msg);
     },
   });
 }

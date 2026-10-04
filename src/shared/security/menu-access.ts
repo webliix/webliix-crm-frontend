@@ -103,12 +103,6 @@ export const menuAccess = {
     path: "/expenses",
     permission: permissions.expenses.view,
   },
-  portal: {
-    id: "portal",
-    label: "Client Portal",
-    path: "/portal",
-    permission: permissions.dashboard.view,
-  },
   settings: {
     id: "settings",
     label: "Settings",

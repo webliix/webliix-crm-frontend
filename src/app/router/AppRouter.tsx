@@ -27,7 +27,6 @@ import ReportsPage from "@/modules/reports/pages/ReportsPage";
 import AuditLogsPage from "@/modules/audit/pages/AuditLogsPage";
 import QuotationListPage from "@/modules/quotations/pages/QuotationListPage";
 import SettingsPage from "@/modules/settings/pages/SettingsPage";
-import ClientPortalPage from "@/modules/portal/pages/ClientPortalPage";
 import { AccessDeniedPage } from "@/modules/system/pages/AccessDeniedPage";
 import { NotFoundPage } from "@/modules/system/pages/NotFoundPage";
 import { ProtectedRoute } from "@/app/router/ProtectedRoute";
@@ -131,18 +130,6 @@ export function AppRouter() {
             <ProtectedRoute>
               <DashboardLayout>
                 <ProjectDetailPage />
-              </DashboardLayout>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/portal"
-          element={
-            <ProtectedRoute>
-              <DashboardLayout>
-                <PageGuard permission={routeAccess["/portal"]}>
-                  <ClientPortalPage />
-                </PageGuard>
               </DashboardLayout>
             </ProtectedRoute>
           }

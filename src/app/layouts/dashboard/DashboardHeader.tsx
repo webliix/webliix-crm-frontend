@@ -34,7 +34,7 @@ export function DashboardHeader({ onMenuClick }: DashboardHeaderProps) {
   const logout = useLogout();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [notifDrawerOpen, setNotifDrawerOpen] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(3);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const open = Boolean(anchorEl);
 
@@ -118,30 +118,6 @@ export function DashboardHeader({ onMenuClick }: DashboardHeaderProps) {
       </Box>
 
       <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-        <Box
-          onClick={() => navigate("/portal")}
-          sx={{
-            px: 1.5,
-            py: 0.5,
-            borderRadius: tokens.borderRadius.sm,
-            border: `1px solid ${tokens.colors.primary[200]}`,
-            bgcolor: tokens.colors.primary[50],
-            color: tokens.colors.primary.main,
-            cursor: "pointer",
-            fontWeight: 700,
-            fontSize: "0.8125rem",
-            display: { xs: "none", sm: "flex" },
-            alignItems: "center",
-            gap: 0.75,
-            transition: "all 0.2s ease",
-            "&:hover": {
-              bgcolor: tokens.colors.primary[100],
-            },
-          }}
-        >
-          Client Portal
-        </Box>
-
         <AppIconButton
           variant="ghost"
           size="md"

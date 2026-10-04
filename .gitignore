@@ -46,6 +46,8 @@ Thumbs.db
 /tmp
 /temp
 *.tmp
+*.zip
+
 
 # Coverage & Test Results
 /coverage

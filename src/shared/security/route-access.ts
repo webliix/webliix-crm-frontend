@@ -16,7 +16,6 @@ export const routeAccess = {
   "/payroll": permissions.payroll.view,
   "/quotations": permissions.quotations.view,
   "/audit-logs": permissions.auditLogs.view,
-  "/portal": permissions.dashboard.view,
 } as const;
 
 export type RouteAccessPath = keyof typeof routeAccess;

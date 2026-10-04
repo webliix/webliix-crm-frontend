@@ -1,11 +1,4 @@
-import {
-  InvoiceControllerService,
-  ProjectControllerService,
-  CustomerControllerService,
-  TicketControllerService,
-  LeadControllerService,
-  AuditControllerService,
-} from "@/api/generated";
+import { http } from "@/shared/services/http";
 import type { DashboardAggregatedData } from "../types/dashboard.types";
 
 export const dashboardService = {
@@ -18,48 +11,60 @@ export const dashboardService = {
       leadsResult,
       auditResult,
     ] = await Promise.allSettled([
-      InvoiceControllerService.dashboard2(),
-      ProjectControllerService.getDashboard1(),
-      CustomerControllerService.getStatistics1(),
-      TicketControllerService.getDashboard(),
-      LeadControllerService.getAllLeads(0, 5),
-      AuditControllerService.searchAudit({ page: 0, size: 6 }),
+      http.get("/api/v1/invoices/dashboard"),
+      http.get("/api/v1/projects/dashboard"),
+      http.get("/api/v1/customers/statistics"),
+      http.get("/api/v1/tickets/dashboard"),
+      http.get("/api/v1/leads", { params: { page: 0, size: 5 } }),
+      http.get("/api/v1/audit/logs", { params: { page: 0, size: 6 } }),
     ]);
 
     const invoices =
-      invoicesResult.status === "fulfilled" && invoicesResult.value?.data
-        ? invoicesResult.value.data
+      invoicesResult.status === "fulfilled"
+        ? (invoicesResult.value?.data?.data || invoicesResult.value?.data)
         : null;
 
     const projects =
-      projectsResult.status === "fulfilled" && projectsResult.value?.data
-        ? projectsResult.value.data
+      projectsResult.status === "fulfilled"
+        ? (projectsResult.value?.data?.data || projectsResult.value?.data)
         : null;
 
     const customers =
-      customersResult.status === "fulfilled" && customersResult.value?.data
-        ? customersResult.value.data
+      customersResult.status === "fulfilled"
+        ? (customersResult.value?.data?.data || customersResult.value?.data)
         : null;
 
     const tickets =
-      ticketsResult.status === "fulfilled" && ticketsResult.value?.data
-        ? ticketsResult.value.data
+      ticketsResult.status === "fulfilled"
+        ? (ticketsResult.value?.data?.data || ticketsResult.value?.data)
         : null;
 
-    const recentLeads =
-      leadsResult.status === "fulfilled" && leadsResult.value?.data?.content
-        ? leadsResult.value.data.content
-        : [];
+    const leadsPayload =
+      leadsResult.status === "fulfilled"
+        ? (leadsResult.value?.data?.data || leadsResult.value?.data)
+        : null;
+
+    const recentLeads = Array.isArray(leadsPayload?.content)
+      ? leadsPayload.content
+      : Array.isArray(leadsPayload)
+      ? leadsPayload
+      : [];
 
     const totalLeads =
-      leadsResult.status === "fulfilled" && leadsResult.value?.data?.totalElements !== undefined
-        ? leadsResult.value.data.totalElements
+      leadsPayload?.totalElements !== undefined
+        ? leadsPayload.totalElements
         : recentLeads.length;
 
-    const recentActivity =
-      auditResult.status === "fulfilled" && auditResult.value?.content
-        ? auditResult.value.content
-        : [];
+    const auditPayload =
+      auditResult.status === "fulfilled"
+        ? (auditResult.value?.data?.data || auditResult.value?.data)
+        : null;
+
+    const recentActivity = Array.isArray(auditPayload?.content)
+      ? auditPayload.content
+      : Array.isArray(auditPayload)
+      ? auditPayload
+      : [];
 
     return {
       invoices,

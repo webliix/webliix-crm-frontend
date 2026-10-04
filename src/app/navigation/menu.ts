@@ -3,7 +3,6 @@ import { menuAccess } from "@/shared/security/menu-access";
 
 export const menuItems: NavigationItem[] = [
   menuAccess.dashboard,
-  menuAccess.portal,
   menuAccess.leads,
   menuAccess.customers,
   menuAccess.projects,

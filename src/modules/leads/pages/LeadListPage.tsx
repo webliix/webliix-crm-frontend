@@ -48,14 +48,12 @@ export default function LeadListPage() {
   };
 
   const qualifiedCount = leads.filter((l: any) => String(l.status).toUpperCase() === "QUALIFIED").length;
-  const inProgressCount = leads.filter(
-    (l: any) =>
-      String(l.status).toUpperCase() === "CONTACTED" ||
-      String(l.status).toUpperCase() === "IN_PROGRESS" ||
-      String(l.status).toUpperCase() === "PROPOSAL"
-  ).length;
+  const inProgressCount = leads.filter((l: any) => {
+    const s = String(l.status).toUpperCase();
+    return s === "CONTACTED" || s === "PROPOSAL_SENT" || s === "NEGOTIATION" || s === "IN_PROGRESS";
+  }).length;
   const wonCount = leads.filter(
-    (l: any) => String(l.status).toUpperCase() === "WON" || String(l.status).toUpperCase() === "CONVERTED"
+    (l: any) => String(l.status).toUpperCase() === "WON" || Boolean(l.converted)
   ).length;
 
   return (
