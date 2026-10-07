@@ -26,6 +26,7 @@ import ExpenseListPage from "@/modules/expenses/pages/ExpenseListPage";
 import ReportsPage from "@/modules/reports/pages/ReportsPage";
 import AuditLogsPage from "@/modules/audit/pages/AuditLogsPage";
 import QuotationListPage from "@/modules/quotations/pages/QuotationListPage";
+import OffersListPage from "@/modules/marketing/pages/OffersListPage";
 import SettingsPage from "@/modules/settings/pages/SettingsPage";
 import { AccessDeniedPage } from "@/modules/system/pages/AccessDeniedPage";
 import { NotFoundPage } from "@/modules/system/pages/NotFoundPage";
@@ -296,6 +297,16 @@ export function AppRouter() {
                 <PageGuard permission={routeAccess["/quotations"]}>
                   <QuotationListPage />
                 </PageGuard>
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/offers"
+          element={
+            <ProtectedRoute>
+              <DashboardLayout>
+                <OffersListPage />
               </DashboardLayout>
             </ProtectedRoute>
           }

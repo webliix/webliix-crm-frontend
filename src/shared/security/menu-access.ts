@@ -103,6 +103,12 @@ export const menuAccess = {
     path: "/expenses",
     permission: permissions.expenses.view,
   },
+  offers: {
+    id: "offers",
+    label: "Client Offers",
+    path: "/offers",
+    permission: permissions.dashboard.view,
+  },
   settings: {
     id: "settings",
     label: "Settings",
