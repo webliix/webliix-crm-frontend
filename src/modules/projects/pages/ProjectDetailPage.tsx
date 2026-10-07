@@ -44,12 +44,16 @@ import AccountBalanceWalletOutlinedIcon from "@mui/icons-material/AccountBalance
 import ReceiptLongOutlinedIcon from "@mui/icons-material/ReceiptLongOutlined";
 import PaymentOutlinedIcon from "@mui/icons-material/PaymentOutlined";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import PeopleOutlineIcon from "@mui/icons-material/PeopleOutline";
+import PersonAddAlt1OutlinedIcon from "@mui/icons-material/PersonAddAlt1Outlined";
+import { http } from "@/shared/services/http";
 import {
   projectApi,
   type ProjectItem,
   type ProjectMilestoneItem,
   type ProjectTaskItem,
   type ProjectCommentItem,
+  type ProjectMemberItem,
 } from "../api/projectApi";
 import { invoiceApi, type ProjectBillingSummary, type InvoiceItem } from "@/modules/invoices/api/invoiceApi";
 import { ticketService } from "@/modules/tickets/services/ticket.service";
@@ -75,6 +79,15 @@ export default function ProjectDetailPage() {
   const [ticketDetailsOpen, setTicketDetailsOpen] = useState<boolean>(false);
   const [ticketCreateOpen, setTicketCreateOpen] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
+
+  // Project Members / Team State
+  const [members, setMembers] = useState<ProjectMemberItem[]>([]);
+  const [memberDialogOpen, setMemberDialogOpen] = useState<boolean>(false);
+  const [allEmployees, setAllEmployees] = useState<any[]>([]);
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState<number | "">("");
+  const [memberRole, setMemberRole] = useState<string>("Full Stack Developer");
+  const [submittingMember, setSubmittingMember] = useState<boolean>(false);
+  const [memberError, setMemberError] = useState<string | null>(null);
 
   // Super Admin Progress & Status Configuration
   const [progressVal, setProgressVal] = useState<number>(0);
@@ -137,7 +150,8 @@ export default function ProjectDetailPage() {
       ticketService.getTicketsByProject(Number(id)),
       documentService.getDocuments({ module: "PROJECT", referenceId: Number(id) }),
       invoiceApi.getProjectBilling(id),
-    ]).then(([projData, msData, taskData, commentData, ticketData, docData, billingData]) => {
+      projectApi.getProjectMembers(id),
+    ]).then(([projData, msData, taskData, commentData, ticketData, docData, billingData, memberData]) => {
       setProject(projData);
       if (projData) {
         setProgressVal(projData.progressPercentage || 0);
@@ -151,6 +165,7 @@ export default function ProjectDetailPage() {
       setProjectTickets(ticketData || []);
       setProjectDocuments(docData || []);
       setProjectBilling(billingData);
+      setMembers(memberData || []);
       setLoading(false);
     });
   };
@@ -334,6 +349,59 @@ export default function ProjectDetailPage() {
       alert(err?.response?.data?.message || "Failed to record payment.");
     } finally {
       setSubmittingPayment(false);
+    }
+  };
+
+  const handleOpenAssignMember = async () => {
+    setMemberError(null);
+    setSelectedEmployeeId("");
+    setMemberRole("Full Stack Developer");
+    setMemberDialogOpen(true);
+    if (allEmployees.length === 0) {
+      try {
+        const res = await http.get("/api/v1/employees", { params: { page: 0, size: 100 } });
+        const list = res.data?.data?.content || res.data?.data || [];
+        setAllEmployees(Array.isArray(list) ? list : []);
+      } catch (err) {
+        console.error("Failed to load employees roster", err);
+      }
+    }
+  };
+
+  const handleAssignMember = async () => {
+    if (!id || !selectedEmployeeId) {
+      setMemberError("Please select an employee.");
+      return;
+    }
+    setSubmittingMember(true);
+    setMemberError(null);
+    try {
+      const res = await projectApi.addProjectMember(id, {
+        employeeId: Number(selectedEmployeeId),
+        roleInProject: memberRole,
+        assignedDate: new Date().toISOString().split("T")[0],
+      });
+      if (res) {
+        const updated = await projectApi.getProjectMembers(id);
+        setMembers(updated);
+        setMemberDialogOpen(false);
+      } else {
+        setMemberError("Failed to assign employee. Please verify they are not already assigned.");
+      }
+    } catch (e: any) {
+      setMemberError(e?.response?.data?.message || "Failed to assign employee to project.");
+    } finally {
+      setSubmittingMember(false);
+    }
+  };
+
+  const handleRemoveMember = async (memberId: number) => {
+    if (!id) return;
+    if (window.confirm("Are you sure you want to remove this team member from the project?")) {
+      const ok = await projectApi.removeProjectMember(id, memberId);
+      if (ok) {
+        setMembers((prev) => prev.filter((m) => m.id !== memberId));
+      }
     }
   };
 
@@ -757,6 +825,126 @@ export default function ProjectDetailPage() {
               <Typography variant="body2" color="text.secondary">
                 No invoices have been issued for this project yet. Click &quot;Create Project Invoice&quot; to bill the customer.
               </Typography>
+            </Box>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Project Team & Assigned Staff */}
+      <Card variant="outlined" sx={{ borderRadius: 2, mb: 3 }}>
+        <CardContent sx={{ p: 3 }}>
+          <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 2, mb: 2 }}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+              <PeopleOutlineIcon color="primary" />
+              <Box>
+                <Typography variant="h6" fontWeight="bold">
+                  Project Team & Assigned Staff ({members.length})
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Employees assigned to this project can view deliverables, submit daily work logs, and bill client invoices.
+                </Typography>
+              </Box>
+            </Box>
+            <Button
+              variant="contained"
+              startIcon={<PersonAddAlt1OutlinedIcon />}
+              onClick={handleOpenAssignMember}
+              sx={{ fontWeight: "bold" }}
+            >
+              Assign Employee to Project
+            </Button>
+          </Box>
+
+          {members.length > 0 ? (
+            <TableContainer sx={{ border: 1, borderColor: "divider", borderRadius: 2 }}>
+              <Table size="small">
+                <TableHead sx={{ bgcolor: "action.hover" }}>
+                  <TableRow>
+                    <TableCell sx={{ fontWeight: "bold" }}>Employee</TableCell>
+                    <TableCell sx={{ fontWeight: "bold" }}>Code</TableCell>
+                    <TableCell sx={{ fontWeight: "bold" }}>Department / Designation</TableCell>
+                    <TableCell sx={{ fontWeight: "bold" }}>Project Role</TableCell>
+                    <TableCell sx={{ fontWeight: "bold" }}>Assigned Date</TableCell>
+                    <TableCell sx={{ fontWeight: "bold", textAlign: "right" }}>Actions</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {members.map((m) => (
+                    <TableRow key={m.id} hover>
+                      <TableCell>
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                          <Avatar sx={{ width: 32, height: 32, bgcolor: "primary.main", fontSize: "0.875rem", fontWeight: "bold" }}>
+                            {(m.employeeName || "E").charAt(0).toUpperCase()}
+                          </Avatar>
+                          <Box>
+                            <Typography variant="body2" fontWeight="bold">
+                              {m.employeeName || `Staff Member #${m.userId}`}
+                            </Typography>
+                            {m.employeeEmail && (
+                              <Typography variant="caption" color="text.secondary">
+                                {m.employeeEmail}
+                              </Typography>
+                            )}
+                          </Box>
+                        </Box>
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={m.employeeCode || `ID #${m.employeeId || m.userId}`}
+                          size="small"
+                          variant="outlined"
+                          sx={{ fontSize: "0.75rem", fontWeight: 600 }}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2">
+                          {m.designationName || "Staff"}
+                        </Typography>
+                        {m.departmentName && (
+                          <Typography variant="caption" color="text.secondary">
+                            {m.departmentName}
+                          </Typography>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={m.roleInProject || "Member"}
+                          size="small"
+                          color="primary"
+                          sx={{ fontWeight: "bold" }}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        {m.assignedDate ? new Date(m.assignedDate).toLocaleDateString() : "—"}
+                      </TableCell>
+                      <TableCell sx={{ textAlign: "right" }}>
+                        <IconButton
+                          size="small"
+                          color="error"
+                          title="Remove from project"
+                          onClick={() => handleRemoveMember(m.id)}
+                        >
+                          <DeleteOutlineIcon fontSize="small" />
+                        </IconButton>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          ) : (
+            <Box sx={{ p: 3, textAlign: "center", bgcolor: "action.hover", borderRadius: 2, border: "1px dashed", borderColor: "divider" }}>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                No employees are currently assigned to this project.
+              </Typography>
+              <Button
+                size="small"
+                variant="outlined"
+                startIcon={<PersonAddAlt1OutlinedIcon />}
+                onClick={handleOpenAssignMember}
+              >
+                Assign First Team Member
+              </Button>
             </Box>
           )}
         </CardContent>
@@ -1497,6 +1685,74 @@ export default function ProjectDetailPage() {
         defaultProjectId={project ? Number(project.id) : undefined}
         defaultProjectName={project ? project.projectName : undefined}
       />
+
+      {/* Assign Employee Modal */}
+      <Dialog
+        open={memberDialogOpen}
+        onClose={() => !submittingMember && setMemberDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle sx={{ fontWeight: "bold" }}>
+          Assign Employee to Project
+        </DialogTitle>
+        <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2.5, pt: "16px !important" }}>
+          {memberError && (
+            <Alert severity="error">{memberError}</Alert>
+          )}
+          <TextField
+            select
+            fullWidth
+            size="small"
+            label="Select Employee"
+            value={selectedEmployeeId}
+            onChange={(e) => setSelectedEmployeeId(e.target.value as any)}
+            helperText="Select an employee from the HR roster to assign to this project"
+          >
+            {allEmployees.map((emp) => (
+              <MenuItem key={emp.id} value={emp.id}>
+                {emp.firstName} {emp.lastName} ({emp.employeeCode || emp.email})
+                {emp.designationName ? ` — ${emp.designationName}` : ""}
+              </MenuItem>
+            ))}
+          </TextField>
+
+          <TextField
+            select
+            fullWidth
+            size="small"
+            label="Project Role"
+            value={memberRole}
+            onChange={(e) => setMemberRole(e.target.value)}
+          >
+            <MenuItem value="Project Lead">Project Lead / Manager</MenuItem>
+            <MenuItem value="Full Stack Developer">Full Stack Developer</MenuItem>
+            <MenuItem value="Backend Engineer">Backend Engineer</MenuItem>
+            <MenuItem value="Frontend Engineer">Frontend Engineer</MenuItem>
+            <MenuItem value="UI/UX Designer">UI/UX Designer</MenuItem>
+            <MenuItem value="QA Engineer">QA Engineer / Tester</MenuItem>
+            <MenuItem value="DevOps Specialist">DevOps Specialist</MenuItem>
+            <MenuItem value="Technical Consultant">Technical Consultant</MenuItem>
+            <MenuItem value="Billing Representative">Billing Representative</MenuItem>
+          </TextField>
+        </DialogContent>
+        <DialogActions sx={{ p: 2.5 }}>
+          <Button
+            onClick={() => setMemberDialogOpen(false)}
+            disabled={submittingMember}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleAssignMember}
+            disabled={submittingMember || !selectedEmployeeId}
+            startIcon={submittingMember ? <CircularProgress size={16} color="inherit" /> : <PersonAddAlt1OutlinedIcon />}
+          >
+            {submittingMember ? "Assigning..." : "Assign to Project"}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Ticket Details & Live Chat Drawer */}
       <TicketDetailsDrawer

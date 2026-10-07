@@ -235,4 +235,49 @@ export const projectApi = {
       return null;
     }
   },
+
+  async getProjectMembers(projectId: number | string): Promise<ProjectMemberItem[]> {
+    try {
+      const res = await http.get(`/api/v1/projects/${projectId}/members`);
+      return res.data?.data ?? [];
+    } catch {
+      return [];
+    }
+  },
+
+  async addProjectMember(
+    projectId: number | string,
+    payload: { employeeId?: number; userId?: number; roleInProject?: string; assignedDate?: string }
+  ): Promise<ProjectMemberItem | null> {
+    try {
+      const res = await http.post(`/api/v1/projects/${projectId}/members`, payload);
+      return res.data?.data ?? null;
+    } catch {
+      return null;
+    }
+  },
+
+  async removeProjectMember(projectId: number | string, memberId: number | string): Promise<boolean> {
+    try {
+      await http.delete(`/api/v1/projects/${projectId}/members/${memberId}`);
+      return true;
+    } catch {
+      return false;
+    }
+  },
 };
+
+export interface ProjectMemberItem {
+  id: number;
+  projectId: number;
+  userId?: number;
+  employeeId?: number;
+  employeeName?: string;
+  employeeEmail?: string;
+  employeeCode?: string;
+  designationName?: string;
+  departmentName?: string;
+  roleInProject: string;
+  assignedDate?: string;
+}
+
