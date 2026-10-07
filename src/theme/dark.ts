@@ -67,7 +67,7 @@ export const darkTheme = createTheme({
     button: { textTransform: "none", fontWeight: 600, letterSpacing: "0.01em" },
   },
   shape: {
-    borderRadius: tokens.borderRadius.md,
+    borderRadius: 8,
   },
   components: {
     MuiCssBaseline: {
@@ -101,7 +101,7 @@ export const darkTheme = createTheme({
       },
       styleOverrides: {
         root: {
-          borderRadius: tokens.borderRadius.sm,
+          borderRadius: "6px",
           fontWeight: 600,
           textTransform: "none",
           padding: "8px 16px",
@@ -115,7 +115,7 @@ export const darkTheme = createTheme({
       },
       styleOverrides: {
         root: {
-          borderRadius: tokens.borderRadius.lg,
+          borderRadius: "10px",
           border: "1px solid #334155",
           backgroundColor: "#1e293b",
           boxShadow: tokens.shadows.card,
@@ -132,7 +132,7 @@ export const darkTheme = createTheme({
     MuiOutlinedInput: {
       styleOverrides: {
         root: {
-          borderRadius: tokens.borderRadius.sm,
+          borderRadius: "6px",
           backgroundColor: "#0f172a",
           "& .MuiOutlinedInput-notchedOutline": {
             borderColor: "#334155",
@@ -149,7 +149,16 @@ export const darkTheme = createTheme({
     MuiDialog: {
       styleOverrides: {
         paper: {
-          borderRadius: tokens.borderRadius.lg,
+          borderRadius: "12px",
+          backgroundColor: "#1e293b",
+          border: "1px solid #334155",
+        },
+      },
+    },
+    MuiMenu: {
+      styleOverrides: {
+        paper: {
+          borderRadius: "10px",
           backgroundColor: "#1e293b",
           border: "1px solid #334155",
         },

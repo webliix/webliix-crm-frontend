@@ -105,7 +105,7 @@ export function AppCard({
   return (
     <Card
       sx={{
-        borderRadius: tokens.borderRadius.lg,
+        borderRadius: "10px",
         position: "relative",
         overflow: "hidden",
         transition: `all ${tokens.transitions.normal}`,

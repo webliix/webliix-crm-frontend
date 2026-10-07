@@ -67,7 +67,7 @@ export const lightTheme = createTheme({
     button: { textTransform: "none", fontWeight: 600, letterSpacing: "0.01em" },
   },
   shape: {
-    borderRadius: tokens.borderRadius.md,
+    borderRadius: 8,
   },
   shadows: [
     "none",
@@ -112,7 +112,7 @@ export const lightTheme = createTheme({
       },
       styleOverrides: {
         root: {
-          borderRadius: tokens.borderRadius.sm,
+          borderRadius: "6px",
           fontWeight: 600,
           textTransform: "none",
           padding: "8px 16px",
@@ -140,7 +140,7 @@ export const lightTheme = createTheme({
       },
       styleOverrides: {
         root: {
-          borderRadius: tokens.borderRadius.lg,
+          borderRadius: "10px",
           border: `1px solid ${tokens.colors.secondary[200]}`,
           backgroundColor: "#ffffff",
           boxShadow: tokens.shadows.card,
@@ -158,7 +158,7 @@ export const lightTheme = createTheme({
     MuiOutlinedInput: {
       styleOverrides: {
         root: {
-          borderRadius: tokens.borderRadius.sm,
+          borderRadius: "6px",
           backgroundColor: "#ffffff",
           "& .MuiOutlinedInput-notchedOutline": {
             borderColor: tokens.colors.secondary[200],
@@ -176,8 +176,26 @@ export const lightTheme = createTheme({
     MuiDialog: {
       styleOverrides: {
         paper: {
-          borderRadius: tokens.borderRadius.lg,
+          borderRadius: "12px",
           boxShadow: tokens.shadows.dialog,
+          border: `1px solid ${tokens.colors.secondary[200]}`,
+        },
+      },
+    },
+    MuiMenu: {
+      styleOverrides: {
+        paper: {
+          borderRadius: "10px",
+          boxShadow: tokens.shadows.lg,
+          border: `1px solid ${tokens.colors.secondary[200]}`,
+        },
+      },
+    },
+    MuiPopover: {
+      styleOverrides: {
+        paper: {
+          borderRadius: "10px",
+          boxShadow: tokens.shadows.lg,
           border: `1px solid ${tokens.colors.secondary[200]}`,
         },
       },
@@ -185,7 +203,7 @@ export const lightTheme = createTheme({
     MuiChip: {
       styleOverrides: {
         root: {
-          borderRadius: tokens.borderRadius.sm,
+          borderRadius: "6px",
           fontWeight: 600,
           fontSize: "0.75rem",
         },
@@ -196,7 +214,7 @@ export const lightTheme = createTheme({
         root: {
           backgroundColor: tokens.colors.secondary[50],
           "& .MuiTableCell-head": {
-            fontWeight: 600,
+            fontWeight: 700,
             color: tokens.colors.secondary[700],
             borderBottom: `1px solid ${tokens.colors.secondary[200]}`,
           },

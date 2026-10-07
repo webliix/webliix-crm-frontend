@@ -129,10 +129,15 @@ export function DashboardSidebar({ mobileOpen = false, onMobileClose }: Dashboar
         sx={{
           display: { xs: "none", md: "block" },
           width: layout.sidebarWidth,
-          minHeight: "100vh",
+          height: "100vh",
+          position: "sticky",
+          top: 0,
+          left: 0,
           borderRight: `1px solid ${tokens.colors.secondary[200]}`,
           bgcolor: "#ffffff",
           flexShrink: 0,
+          zIndex: 1000,
+          overflowY: "auto",
         }}
       >
         {sidebarContent}

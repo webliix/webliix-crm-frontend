@@ -79,56 +79,100 @@ export default function LeadListPage() {
     >
       {/* Metrics Row */}
       <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", md: "repeat(4, 1fr)" }, gap: 3, mb: 3 }}>
-        <Card variant="outlined" sx={{ borderRadius: 2 }}>
-          <CardContent sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-            <PeopleAltOutlinedIcon color="primary" sx={{ fontSize: 36 }} />
+        <Card
+          variant="outlined"
+          sx={{
+            borderRadius: "10px",
+            border: "1px solid #e2e8f0",
+            bgcolor: "#ffffff",
+            transition: "all 0.2s ease",
+            "&:hover": { borderColor: "primary.main", boxShadow: "0 4px 16px rgba(0,0,0,0.04)", transform: "translateY(-1px)" },
+          }}
+        >
+          <CardContent sx={{ display: "flex", alignItems: "center", gap: 2, p: 2.5 }}>
+            <Box sx={{ p: 1.25, borderRadius: "8px", bgcolor: "#eef2ff", color: "#4f46e5", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <PeopleAltOutlinedIcon sx={{ fontSize: 26 }} />
+            </Box>
             <Box>
-              <Typography variant="h5" fontWeight="bold">
+              <Typography variant="h5" fontWeight={800} color="#0f172a" lineHeight={1.2}>
                 {total || leads.length}
               </Typography>
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="body2" color="text.secondary" fontWeight={500}>
                 Total Leads
               </Typography>
             </Box>
           </CardContent>
         </Card>
 
-        <Card variant="outlined" sx={{ borderRadius: 2 }}>
-          <CardContent sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-            <CheckCircleOutlinedIcon color="info" sx={{ fontSize: 36 }} />
+        <Card
+          variant="outlined"
+          sx={{
+            borderRadius: "10px",
+            border: "1px solid #e2e8f0",
+            bgcolor: "#ffffff",
+            transition: "all 0.2s ease",
+            "&:hover": { borderColor: "info.main", boxShadow: "0 4px 16px rgba(0,0,0,0.04)", transform: "translateY(-1px)" },
+          }}
+        >
+          <CardContent sx={{ display: "flex", alignItems: "center", gap: 2, p: 2.5 }}>
+            <Box sx={{ p: 1.25, borderRadius: "8px", bgcolor: "#f0f9ff", color: "#0ea5e9", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <CheckCircleOutlinedIcon sx={{ fontSize: 26 }} />
+            </Box>
             <Box>
-              <Typography variant="h5" fontWeight="bold" color="info.main">
+              <Typography variant="h5" fontWeight={800} color="#0ea5e9" lineHeight={1.2}>
                 {qualifiedCount}
               </Typography>
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="body2" color="text.secondary" fontWeight={500}>
                 Qualified Prospects
               </Typography>
             </Box>
           </CardContent>
         </Card>
 
-        <Card variant="outlined" sx={{ borderRadius: 2 }}>
-          <CardContent sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-            <ContactMailOutlinedIcon color="warning" sx={{ fontSize: 36 }} />
+        <Card
+          variant="outlined"
+          sx={{
+            borderRadius: "10px",
+            border: "1px solid #e2e8f0",
+            bgcolor: "#ffffff",
+            transition: "all 0.2s ease",
+            "&:hover": { borderColor: "warning.main", boxShadow: "0 4px 16px rgba(0,0,0,0.04)", transform: "translateY(-1px)" },
+          }}
+        >
+          <CardContent sx={{ display: "flex", alignItems: "center", gap: 2, p: 2.5 }}>
+            <Box sx={{ p: 1.25, borderRadius: "8px", bgcolor: "#fffbeb", color: "#f59e0b", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <ContactMailOutlinedIcon sx={{ fontSize: 26 }} />
+            </Box>
             <Box>
-              <Typography variant="h5" fontWeight="bold" color="warning.main">
+              <Typography variant="h5" fontWeight={800} color="#f59e0b" lineHeight={1.2}>
                 {inProgressCount}
               </Typography>
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="body2" color="text.secondary" fontWeight={500}>
                 In Contact / Proposal
               </Typography>
             </Box>
           </CardContent>
         </Card>
 
-        <Card variant="outlined" sx={{ borderRadius: 2 }}>
-          <CardContent sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-            <EmojiEventsOutlinedIcon color="success" sx={{ fontSize: 36 }} />
+        <Card
+          variant="outlined"
+          sx={{
+            borderRadius: "10px",
+            border: "1px solid #e2e8f0",
+            bgcolor: "#ffffff",
+            transition: "all 0.2s ease",
+            "&:hover": { borderColor: "success.main", boxShadow: "0 4px 16px rgba(0,0,0,0.04)", transform: "translateY(-1px)" },
+          }}
+        >
+          <CardContent sx={{ display: "flex", alignItems: "center", gap: 2, p: 2.5 }}>
+            <Box sx={{ p: 1.25, borderRadius: "8px", bgcolor: "#ecfdf5", color: "#10b981", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <EmojiEventsOutlinedIcon sx={{ fontSize: 26 }} />
+            </Box>
             <Box>
-              <Typography variant="h5" fontWeight="bold" color="success.main">
+              <Typography variant="h5" fontWeight={800} color="#10b981" lineHeight={1.2}>
                 {wonCount}
               </Typography>
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="body2" color="text.secondary" fontWeight={500}>
                 Won / Converted
               </Typography>
             </Box>

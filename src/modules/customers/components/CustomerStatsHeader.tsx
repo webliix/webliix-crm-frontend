@@ -88,8 +88,9 @@ export function CustomerStatsHeader() {
           key={idx}
           variant="outlined"
           sx={{
-            borderRadius: 2,
-            bgcolor: "background.paper",
+            borderRadius: "10px",
+            border: "1px solid #e2e8f0",
+            bgcolor: "#ffffff",
             transition: "all 0.2s ease",
             "&:hover": {
               borderColor: tokens.colors.primary.main,
@@ -101,8 +102,8 @@ export function CustomerStatsHeader() {
           <CardContent sx={{ p: 2.5, display: "flex", alignItems: "center", gap: 2 }}>
             <Box
               sx={{
-                p: 1.5,
-                borderRadius: 2,
+                p: 1.25,
+                borderRadius: "8px",
                 bgcolor: item.bgColor,
                 color: item.iconColor,
                 display: "flex",

@@ -198,56 +198,100 @@ export default function ProjectListPage() {
     >
       {/* Metrics Row */}
       <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", md: "repeat(4, 1fr)" }, gap: 3, mb: 3 }}>
-        <Card variant="outlined" sx={{ borderRadius: 2 }}>
-          <CardContent sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-            <FolderSpecialOutlinedIcon color="primary" sx={{ fontSize: 36 }} />
+        <Card
+          variant="outlined"
+          sx={{
+            borderRadius: "10px",
+            border: "1px solid #e2e8f0",
+            bgcolor: "#ffffff",
+            transition: "all 0.2s ease",
+            "&:hover": { borderColor: "primary.main", boxShadow: "0 4px 16px rgba(0,0,0,0.04)", transform: "translateY(-1px)" },
+          }}
+        >
+          <CardContent sx={{ display: "flex", alignItems: "center", gap: 2, p: 2.5 }}>
+            <Box sx={{ p: 1.25, borderRadius: "8px", bgcolor: "#eef2ff", color: "#4f46e5", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <FolderSpecialOutlinedIcon sx={{ fontSize: 26 }} />
+            </Box>
             <Box>
-              <Typography variant="h5" fontWeight="bold">
+              <Typography variant="h5" fontWeight={800} color="#0f172a" lineHeight={1.2}>
                 {totalCount}
               </Typography>
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="body2" color="text.secondary" fontWeight={500}>
                 Total Projects
               </Typography>
             </Box>
           </CardContent>
         </Card>
 
-        <Card variant="outlined" sx={{ borderRadius: 2 }}>
-          <CardContent sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-            <HourglassEmptyOutlinedIcon color="info" sx={{ fontSize: 36 }} />
+        <Card
+          variant="outlined"
+          sx={{
+            borderRadius: "10px",
+            border: "1px solid #e2e8f0",
+            bgcolor: "#ffffff",
+            transition: "all 0.2s ease",
+            "&:hover": { borderColor: "info.main", boxShadow: "0 4px 16px rgba(0,0,0,0.04)", transform: "translateY(-1px)" },
+          }}
+        >
+          <CardContent sx={{ display: "flex", alignItems: "center", gap: 2, p: 2.5 }}>
+            <Box sx={{ p: 1.25, borderRadius: "8px", bgcolor: "#f0f9ff", color: "#0ea5e9", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <HourglassEmptyOutlinedIcon sx={{ fontSize: 26 }} />
+            </Box>
             <Box>
-              <Typography variant="h5" fontWeight="bold" color="info.main">
+              <Typography variant="h5" fontWeight={800} color="#0ea5e9" lineHeight={1.2}>
                 {inProgressCount}
               </Typography>
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="body2" color="text.secondary" fontWeight={500}>
                 In Progress
               </Typography>
             </Box>
           </CardContent>
         </Card>
 
-        <Card variant="outlined" sx={{ borderRadius: 2 }}>
-          <CardContent sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-            <CalendarTodayOutlinedIcon color="warning" sx={{ fontSize: 36 }} />
+        <Card
+          variant="outlined"
+          sx={{
+            borderRadius: "10px",
+            border: "1px solid #e2e8f0",
+            bgcolor: "#ffffff",
+            transition: "all 0.2s ease",
+            "&:hover": { borderColor: "warning.main", boxShadow: "0 4px 16px rgba(0,0,0,0.04)", transform: "translateY(-1px)" },
+          }}
+        >
+          <CardContent sx={{ display: "flex", alignItems: "center", gap: 2, p: 2.5 }}>
+            <Box sx={{ p: 1.25, borderRadius: "8px", bgcolor: "#fffbeb", color: "#f59e0b", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <CalendarTodayOutlinedIcon sx={{ fontSize: 26 }} />
+            </Box>
             <Box>
-              <Typography variant="h5" fontWeight="bold" color="warning.main">
+              <Typography variant="h5" fontWeight={800} color="#f59e0b" lineHeight={1.2}>
                 {planningCount}
               </Typography>
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="body2" color="text.secondary" fontWeight={500}>
                 Planning Phase
               </Typography>
             </Box>
           </CardContent>
         </Card>
 
-        <Card variant="outlined" sx={{ borderRadius: 2 }}>
-          <CardContent sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-            <CheckCircleOutlinedIcon color="success" sx={{ fontSize: 36 }} />
+        <Card
+          variant="outlined"
+          sx={{
+            borderRadius: "10px",
+            border: "1px solid #e2e8f0",
+            bgcolor: "#ffffff",
+            transition: "all 0.2s ease",
+            "&:hover": { borderColor: "success.main", boxShadow: "0 4px 16px rgba(0,0,0,0.04)", transform: "translateY(-1px)" },
+          }}
+        >
+          <CardContent sx={{ display: "flex", alignItems: "center", gap: 2, p: 2.5 }}>
+            <Box sx={{ p: 1.25, borderRadius: "8px", bgcolor: "#ecfdf5", color: "#10b981", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <CheckCircleOutlinedIcon sx={{ fontSize: 26 }} />
+            </Box>
             <Box>
-              <Typography variant="h5" fontWeight="bold" color="success.main">
+              <Typography variant="h5" fontWeight={800} color="#10b981" lineHeight={1.2}>
                 {completedCount}
               </Typography>
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="body2" color="text.secondary" fontWeight={500}>
                 Completed
               </Typography>
             </Box>
@@ -273,27 +317,30 @@ export default function ProjectListPage() {
         />
 
         <Box sx={{ display: "flex", gap: 1 }}>
-          <Chip
-            label="All Projects"
-            clickable
-            color={statusFilter === "ALL" ? "primary" : "default"}
+          <Button
+            size="small"
+            variant={statusFilter === "ALL" ? "contained" : "outlined"}
             onClick={() => setStatusFilter("ALL")}
-            sx={{ fontWeight: "bold" }}
-          />
-          <Chip
-            label="Active & In Progress"
-            clickable
-            color={statusFilter === "IN_PROGRESS" ? "primary" : "default"}
+            sx={{ borderRadius: "6px", textTransform: "none", fontWeight: 600, fontSize: "0.8125rem", px: 2 }}
+          >
+            All Projects
+          </Button>
+          <Button
+            size="small"
+            variant={statusFilter === "IN_PROGRESS" ? "contained" : "outlined"}
             onClick={() => setStatusFilter("IN_PROGRESS")}
-            sx={{ fontWeight: "bold" }}
-          />
-          <Chip
-            label="Completed"
-            clickable
-            color={statusFilter === "COMPLETED" ? "primary" : "default"}
+            sx={{ borderRadius: "6px", textTransform: "none", fontWeight: 600, fontSize: "0.8125rem", px: 2 }}
+          >
+            Active & In Progress
+          </Button>
+          <Button
+            size="small"
+            variant={statusFilter === "COMPLETED" ? "contained" : "outlined"}
             onClick={() => setStatusFilter("COMPLETED")}
-            sx={{ fontWeight: "bold" }}
-          />
+            sx={{ borderRadius: "6px", textTransform: "none", fontWeight: 600, fontSize: "0.8125rem", px: 2 }}
+          >
+            Completed
+          </Button>
         </Box>
       </Box>
 
@@ -302,7 +349,7 @@ export default function ProjectListPage() {
           <BrandLoader message="Loading projects, phases & deliverables..." size="medium" />
         </Box>
       ) : filteredProjects.length === 0 ? (
-        <Card variant="outlined" sx={{ borderRadius: 2, p: 6, textAlign: "center" }}>
+        <Card variant="outlined" sx={{ borderRadius: "10px", border: "1px solid #e2e8f0", p: 6, textAlign: "center" }}>
           <FolderSpecialOutlinedIcon sx={{ fontSize: 56, color: "text.secondary", mb: 2 }} />
           <Typography variant="h6" fontWeight="bold" gutterBottom>
             No Projects Found
@@ -310,7 +357,7 @@ export default function ProjectListPage() {
           <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 480, mx: "auto", mb: 3 }}>
             No project records match your current filter criteria. You can initiate a new project with automatic phase division above.
           </Typography>
-          <Button variant="outlined" startIcon={<AddIcon />} onClick={() => setCreateDialogOpen(true)} sx={{ fontWeight: "bold" }}>
+          <Button variant="outlined" startIcon={<AddIcon />} onClick={() => setCreateDialogOpen(true)} sx={{ fontWeight: "bold", borderRadius: "6px" }}>
             Initiate First Project
           </Button>
         </Card>
@@ -324,11 +371,12 @@ export default function ProjectListPage() {
                 height: "100%",
                 display: "flex",
                 flexDirection: "column",
-                borderRadius: 2,
+                borderRadius: "10px",
+                border: "1px solid #e2e8f0",
                 transition: "all 0.2s ease",
                 "&:hover": {
                   borderColor: "primary.main",
-                  boxShadow: 2,
+                  boxShadow: "0 6px 20px rgba(0,0,0,0.06)",
                   transform: "translateY(-2px)",
                 },
               }}
@@ -338,7 +386,7 @@ export default function ProjectListPage() {
                   <Chip
                     label={project.projectCode || `PRJ-${project.id}`}
                     size="small"
-                    sx={{ fontWeight: "bold", fontSize: "0.725rem" }}
+                    sx={{ fontWeight: "bold", fontSize: "0.725rem", borderRadius: "4px" }}
                   />
                   {getStatusChip(project.status)}
                 </Box>
@@ -349,7 +397,7 @@ export default function ProjectListPage() {
                   </Typography>
                 )}
 
-                <Typography variant="h6" fontWeight="bold" sx={{ mb: 1 }}>
+                <Typography variant="h6" fontWeight="bold" sx={{ mb: 1, color: "#0f172a" }}>
                   {project.projectName}
                 </Typography>
 
@@ -384,13 +432,13 @@ export default function ProjectListPage() {
                     value={project.progressPercentage ?? 0}
                     sx={{
                       height: 6,
-                      borderRadius: 1,
+                      borderRadius: "3px",
                     }}
                   />
                 </Box>
 
                 {/* Dates & Action */}
-                <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mt: 3, pt: 2, borderTop: 1, borderColor: "divider" }}>
+                <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mt: 3, pt: 2, borderTop: "1px solid #e2e8f0" }}>
                   <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
                     <CalendarTodayOutlinedIcon sx={{ fontSize: 16, color: "text.secondary" }} />
                     <Typography variant="caption" color="text.secondary" fontWeight={500}>
@@ -400,9 +448,20 @@ export default function ProjectListPage() {
 
                   <Button
                     size="small"
+                    variant="contained"
                     endIcon={<ArrowForwardIcon sx={{ fontSize: 14 }} />}
                     onClick={() => navigate(`/projects/${project.id}`)}
-                    sx={{ fontWeight: "bold", fontSize: "0.8125rem", p: 0 }}
+                    sx={{
+                      borderRadius: "6px",
+                      textTransform: "none",
+                      fontWeight: 600,
+                      fontSize: "0.8125rem",
+                      px: 2,
+                      py: 0.5,
+                      boxShadow: "none",
+                      bgcolor: "#4f46e5",
+                      "&:hover": { bgcolor: "#4338ca" },
+                    }}
                   >
                     View Project
                   </Button>

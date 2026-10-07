@@ -87,6 +87,14 @@ export function AppStatCard({
     }
   };
 
+  const colorBgMap: Record<string, string> = {
+    primary: tokens.colors.primary[50],
+    success: tokens.colors.success[50],
+    warning: tokens.colors.warning[50],
+    error: tokens.colors.error[50],
+    info: tokens.colors.info[50],
+  };
+
   const colorStyle = getColorTokens();
   const trendStyle = getTrendColor();
 
@@ -95,23 +103,28 @@ export function AppStatCard({
       variant="outlined"
       onClick={onClick}
       sx={{
-        borderRadius: 2,
+        borderRadius: "10px",
+        border: "1px solid #e2e8f0",
+        bgcolor: "#ffffff",
         cursor: onClick ? "pointer" : "default",
         height: "100%",
         transition: "all 0.2s ease",
-        "&:hover": onClick
-          ? {
-              borderColor: colorStyle.color,
-              boxShadow: 1,
-              transform: "translateY(-2px)",
-            }
-          : undefined,
+        "&:hover": {
+          borderColor: colorStyle.color,
+          boxShadow: "0 4px 16px rgba(0, 0, 0, 0.04)",
+          transform: "translateY(-1px)",
+        },
       }}
     >
-      <CardContent sx={{ p: 2.5, display: "flex", alignItems: "center", gap: 2.5 }}>
+      <CardContent sx={{ p: 2.5, display: "flex", alignItems: "center", gap: 2 }}>
         {icon && (
           <Box
             sx={{
+              p: 1.25,
+              width: 44,
+              height: 44,
+              borderRadius: "8px",
+              bgcolor: colorBgMap[color] || tokens.colors.primary[50],
               color: colorStyle.color,
               display: "flex",
               alignItems: "center",
@@ -127,7 +140,7 @@ export function AppStatCard({
           <Typography
             variant="h5"
             sx={{
-              fontWeight: "bold",
+              fontWeight: 800,
               color: colorStyle.color,
               lineHeight: 1.2,
             }}

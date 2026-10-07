@@ -229,21 +229,23 @@ export function NotificationDrawer({ open, onClose, onUnreadCountChange }: Notif
       >
         <Button
           size="small"
+          variant="outlined"
           startIcon={<DoneAllIcon sx={{ fontSize: 16 }} />}
           onClick={handleMarkAllRead}
           disabled={unreadCount === 0}
-          sx={{ fontSize: "0.775rem", fontWeight: 600 }}
+          sx={{ fontSize: "0.775rem", fontWeight: 600, borderRadius: "6px" }}
         >
           Mark all as read
         </Button>
 
         <Button
           size="small"
+          variant="outlined"
           color="error"
           startIcon={<DeleteSweepIcon sx={{ fontSize: 16 }} />}
           onClick={handleClearAll}
           disabled={notifications.length === 0}
-          sx={{ fontSize: "0.775rem", fontWeight: 600 }}
+          sx={{ fontSize: "0.775rem", fontWeight: 600, borderRadius: "6px" }}
         >
           Clear all
         </Button>
@@ -285,7 +287,7 @@ export function NotificationDrawer({ open, onClose, onUnreadCountChange }: Notif
                 key={item.id}
                 sx={{
                   p: 2,
-                  borderRadius: tokens.borderRadius.md,
+                  borderRadius: "8px",
                   border: `1px solid ${item.read ? tokens.colors.secondary[200] : tokens.colors.primary[200]}`,
                   backgroundColor: item.read ? "#ffffff" : tokens.colors.primary[50],
                   position: "relative",
@@ -342,9 +344,10 @@ export function NotificationDrawer({ open, onClose, onUnreadCountChange }: Notif
                   {item.actionUrl && (
                     <Button
                       size="small"
+                      variant="text"
                       endIcon={<ArrowForwardIcon sx={{ fontSize: 14 }} />}
                       onClick={() => handleActionClick(item.actionUrl)}
-                      sx={{ fontSize: "0.75rem", fontWeight: 700, p: 0, minWidth: "auto" }}
+                      sx={{ fontSize: "0.75rem", fontWeight: 700, p: 0, minWidth: "auto", borderRadius: "4px" }}
                     >
                       {item.actionLabel || "View Details"}
                     </Button>

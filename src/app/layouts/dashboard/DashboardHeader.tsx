@@ -144,14 +144,14 @@ export function DashboardHeader({ onMenuClick }: DashboardHeaderProps) {
                 alignItems: "center",
                 gap: 1.25,
                 p: 0.5,
-                pr: 1.5,
-                borderRadius: tokens.borderRadius.full,
+                px: 1.25,
+                borderRadius: "8px",
                 cursor: "pointer",
                 border: `1px solid ${tokens.colors.secondary[200]}`,
-                backgroundColor: tokens.colors.secondary[50],
+                backgroundColor: "#ffffff",
                 transition: tokens.transitions.fast,
                 "&:hover": {
-                  backgroundColor: tokens.colors.secondary[100],
+                  backgroundColor: tokens.colors.secondary[50],
                   borderColor: tokens.colors.secondary[300],
                 },
               }}
@@ -160,11 +160,11 @@ export function DashboardHeader({ onMenuClick }: DashboardHeaderProps) {
                 sx={{
                   width: 32,
                   height: 32,
+                  borderRadius: "6px",
                   fontSize: "0.85rem",
                   fontWeight: 700,
-                  background: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)",
+                  background: "linear-gradient(135deg, #4f46e5 0%, #6366f1 100%)",
                   color: "#ffffff",
-                  boxShadow: "0 2px 8px rgba(99, 102, 241, 0.25)",
                 }}
               >
                 {userInitial}
@@ -185,9 +185,9 @@ export function DashboardHeader({ onMenuClick }: DashboardHeaderProps) {
               anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
               PaperProps={{
                 sx: {
-                  width: 220,
+                  width: 240,
                   p: 1,
-                  borderRadius: tokens.borderRadius.md,
+                  borderRadius: "10px",
                   boxShadow: tokens.shadows.lg,
                   border: `1px solid ${tokens.colors.secondary[200]}`,
                 },
