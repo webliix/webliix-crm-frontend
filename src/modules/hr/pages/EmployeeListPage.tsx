@@ -382,9 +382,7 @@ export default function EmployeeListPage() {
       } else {
         await http.post("/api/v1/employees", payload);
         setNotification({
-          message: employeeFormData.password
-            ? "Employee created with active portal login account!"
-            : "Employee created successfully.",
+          message: "Employee profile & portal login created! Credentials dispatched from noreply@webliix.com.",
           severity: "success",
         });
       }
@@ -1059,13 +1057,13 @@ export default function EmployeeListPage() {
               <TextField
                 label={editingEmployee ? "Update Password (Optional)" : "Account Password (Login Provisioning)"}
                 type="password"
-                placeholder={editingEmployee ? "Leave blank to keep unchanged" : "Set password for employee portal access"}
+                placeholder={editingEmployee ? "Leave blank to keep unchanged" : "Set password or leave blank to auto-generate"}
                 value={employeeFormData.password}
                 onChange={(e) => setEmployeeFormData({ ...employeeFormData, password: e.target.value })}
                 helperText={
                   editingEmployee
                     ? "Leave blank to preserve current password"
-                    : "If entered, automatically creates a linked portal login account with EMPLOYEE role."
+                    : "Leave blank to auto-generate a secure password. Credentials will be automatically emailed to the employee from noreply@webliix.com."
                 }
               />
               <TextField
@@ -1109,9 +1107,12 @@ export default function EmployeeListPage() {
                   onChange={(e) => setEmployeeFormData({ ...employeeFormData, employmentType: e.target.value })}
                 >
                   <MenuItem value="FULL_TIME">Full Time</MenuItem>
+                  <MenuItem value="PERMANENT">Permanent</MenuItem>
                   <MenuItem value="PART_TIME">Part Time</MenuItem>
                   <MenuItem value="CONTRACT">Contract</MenuItem>
                   <MenuItem value="INTERN">Intern</MenuItem>
+                  <MenuItem value="FREELANCER">Freelancer</MenuItem>
+                  <MenuItem value="PROBATION">Probation</MenuItem>
                 </Select>
               </FormControl>
               <TextField
