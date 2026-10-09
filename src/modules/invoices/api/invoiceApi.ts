@@ -121,5 +121,22 @@ export const invoiceApi = {
       return [];
     }
   },
+
+  async updateInvoice(
+    id: number | string,
+    payload: Partial<CreateInvoicePayload> & { status?: string; paidAmount?: number }
+  ): Promise<InvoiceItem | null> {
+    const res = await http.put(`/api/v1/invoices/${id}`, payload);
+    return res.data?.data ?? null;
+  },
+
+  async deleteInvoice(id: number | string): Promise<boolean> {
+    try {
+      await http.delete(`/api/v1/invoices/${id}`);
+      return true;
+    } catch {
+      return false;
+    }
+  },
 };
 

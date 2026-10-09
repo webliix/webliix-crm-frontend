@@ -17,6 +17,7 @@ import Checkbox from "@mui/material/Checkbox";
 import Switch from "@mui/material/Switch";
 import Alert from "@mui/material/Alert";
 import InputAdornment from "@mui/material/InputAdornment";
+import IconButton from "@mui/material/IconButton";
 import { BrandLoader } from "@/shared/components/ui/feedback/BrandLoader";
 import { PageLayout } from "@/shared/components/ui/layout";
 import FolderSpecialOutlinedIcon from "@mui/icons-material/FolderSpecialOutlined";
@@ -26,6 +27,9 @@ import CheckCircleOutlinedIcon from "@mui/icons-material/CheckCircleOutlined";
 import HourglassEmptyOutlinedIcon from "@mui/icons-material/HourglassEmptyOutlined";
 import AddIcon from "@mui/icons-material/Add";
 import SearchIcon from "@mui/icons-material/Search";
+import EditNoteOutlinedIcon from "@mui/icons-material/EditNoteOutlined";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import AccountBalanceWalletOutlinedIcon from "@mui/icons-material/AccountBalanceWalletOutlined";
 import { tokens } from "@/theme/tokens";
 import { useNavigate } from "react-router-dom";
 import { projectApi, type ProjectItem, type CreateProjectPayload } from "../api/projectApi";
@@ -50,6 +54,97 @@ export default function ProjectListPage() {
   const [customers, setCustomers] = useState<CustomerOption[]>([]);
   const [creating, setCreating] = useState<boolean>(false);
   const [createError, setCreateError] = useState<string | null>(null);
+
+  // Edit Project Dialog State
+  const [editDialogOpen, setEditDialogOpen] = useState<boolean>(false);
+  const [editingProjectId, setEditingProjectId] = useState<number | null>(null);
+  const [editProjectName, setEditProjectName] = useState<string>("");
+  const [editProjectBudget, setEditProjectBudget] = useState<number>(0);
+  const [editProjectStatus, setEditProjectStatus] = useState<string>("IN_PROGRESS");
+  const [editProjectPriority, setEditProjectPriority] = useState<string>("MEDIUM");
+  const [editProjectStartDate, setEditProjectStartDate] = useState<string>("");
+  const [editProjectEndDate, setEditProjectEndDate] = useState<string>("");
+  const [editProjectBillable, setEditProjectBillable] = useState<boolean>(true);
+  const [editProjectDesc, setEditProjectDesc] = useState<string>("");
+  const [submittingEdit, setSubmittingEdit] = useState<boolean>(false);
+  const [editError, setEditError] = useState<string | null>(null);
+
+  // Delete Project Dialog State
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState<boolean>(false);
+  const [deletingProjectId, setDeletingProjectId] = useState<number | null>(null);
+  const [deletingProjectName, setDeletingProjectName] = useState<string>("");
+  const [deleting, setDeleting] = useState<boolean>(false);
+
+  const handleOpenEdit = (p: ProjectItem) => {
+    setEditingProjectId(p.id);
+    setEditProjectName(p.projectName || "");
+    setEditProjectBudget(p.budget || 0);
+    setEditProjectStatus(p.status || "IN_PROGRESS");
+    setEditProjectPriority(p.priority || "MEDIUM");
+    setEditProjectStartDate(p.startDate ? p.startDate.split("T")[0] : "");
+    setEditProjectEndDate(p.expectedEndDate ? p.expectedEndDate.split("T")[0] : "");
+    setEditProjectBillable(p.billable !== undefined ? p.billable : true);
+    setEditProjectDesc(p.description || "");
+    setEditError(null);
+    setEditDialogOpen(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingProjectId || !editProjectName.trim()) {
+      setEditError("Please enter a valid project name.");
+      return;
+    }
+    setSubmittingEdit(true);
+    setEditError(null);
+    try {
+      const updated = await projectApi.updateProject(editingProjectId, {
+        projectName: editProjectName.trim(),
+        budget: Number(editProjectBudget) || 0,
+        status: editProjectStatus,
+        priority: editProjectPriority,
+        startDate: editProjectStartDate || undefined,
+        expectedEndDate: editProjectEndDate || undefined,
+        billable: editProjectBillable,
+        description: editProjectDesc.trim(),
+      });
+      if (updated) {
+        setEditDialogOpen(false);
+        setEditingProjectId(null);
+        fetchProjects();
+      } else {
+        setEditError("Failed to update project.");
+      }
+    } catch (err: any) {
+      setEditError(err?.response?.data?.message || "Failed to update project.");
+    } finally {
+      setSubmittingEdit(false);
+    }
+  };
+
+  const handleOpenDelete = (p: ProjectItem) => {
+    setDeletingProjectId(p.id);
+    setDeletingProjectName(p.projectName);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deletingProjectId) return;
+    setDeleting(true);
+    try {
+      const success = await projectApi.deleteProject(deletingProjectId);
+      if (success) {
+        setDeleteDialogOpen(false);
+        setDeletingProjectId(null);
+        fetchProjects();
+      } else {
+        alert("Failed to delete project.");
+      }
+    } catch (err: any) {
+      alert(err?.response?.data?.message || "Failed to delete project.");
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   const [formData, setFormData] = useState<CreateProjectPayload>({
     projectName: "",
@@ -437,13 +532,50 @@ export default function ProjectListPage() {
                   />
                 </Box>
 
-                {/* Dates & Action */}
-                <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mt: 3, pt: 2, borderTop: "1px solid #e2e8f0" }}>
+                {/* Budget & Due Date */}
+                <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mt: 2, pt: 1.5, borderTop: "1px dashed #e2e8f0" }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+                    <AccountBalanceWalletOutlinedIcon sx={{ fontSize: 16, color: "primary.main" }} />
+                    <Typography variant="caption" fontWeight="bold" color="text.primary">
+                      Budget: ₹{(project.budget || 0).toLocaleString()}
+                    </Typography>
+                  </Box>
                   <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
                     <CalendarTodayOutlinedIcon sx={{ fontSize: 16, color: "text.secondary" }} />
                     <Typography variant="caption" color="text.secondary" fontWeight={500}>
                       {project.expectedEndDate ? `Due ${new Date(project.expectedEndDate).toLocaleDateString()}` : "Active Timeline"}
                     </Typography>
+                  </Box>
+                </Box>
+
+                {/* Card Actions */}
+                <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mt: 2, pt: 1.5, borderTop: "1px solid #e2e8f0" }}>
+                  <Box sx={{ display: "flex", gap: 0.75 }}>
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      startIcon={<EditNoteOutlinedIcon sx={{ fontSize: 16 }} />}
+                      onClick={() => handleOpenEdit(project)}
+                      sx={{
+                        borderRadius: "6px",
+                        textTransform: "none",
+                        fontWeight: 600,
+                        fontSize: "0.75rem",
+                        px: 1.5,
+                        py: 0.4,
+                      }}
+                    >
+                      Edit
+                    </Button>
+                    <IconButton
+                      size="small"
+                      color="error"
+                      onClick={() => handleOpenDelete(project)}
+                      title="Delete Project"
+                      sx={{ border: "1px solid #fecaca", borderRadius: "6px", p: 0.5 }}
+                    >
+                      <DeleteOutlineIcon sx={{ fontSize: 16 }} />
+                    </IconButton>
                   </Box>
 
                   <Button
@@ -630,6 +762,158 @@ export default function ProjectListPage() {
             sx={{ fontWeight: 700, px: 3, borderRadius: tokens.borderRadius.md }}
           >
             {creating ? "Initiating..." : "Initiate & Deploy Project"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Edit Project Dialog */}
+      <Dialog
+        open={editDialogOpen}
+        onClose={() => !submittingEdit && setEditDialogOpen(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle sx={{ fontWeight: "bold" }}>
+          Edit Project & Budget Controls
+        </DialogTitle>
+        <DialogContent dividers sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
+          {editError && <Alert severity="error">{editError}</Alert>}
+
+          <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "2fr 1fr" }, gap: 2 }}>
+            <TextField
+              label="Project Title"
+              required
+              fullWidth
+              size="small"
+              value={editProjectName}
+              onChange={(e) => setEditProjectName(e.target.value)}
+            />
+            <TextField
+              label="Total Project Budget (₹)"
+              type="number"
+              required
+              fullWidth
+              size="small"
+              helperText="Set & control project budget"
+              value={editProjectBudget}
+              onChange={(e) => setEditProjectBudget(Number(e.target.value))}
+            />
+          </Box>
+
+          <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr 1fr" }, gap: 2 }}>
+            <TextField
+              select
+              label="Status"
+              fullWidth
+              size="small"
+              value={editProjectStatus}
+              onChange={(e) => setEditProjectStatus(e.target.value)}
+            >
+              <MenuItem value="PLANNING">Planning</MenuItem>
+              <MenuItem value="IN_PROGRESS">In Progress</MenuItem>
+              <MenuItem value="ON_HOLD">On Hold</MenuItem>
+              <MenuItem value="COMPLETED">Completed</MenuItem>
+              <MenuItem value="CANCELLED">Cancelled</MenuItem>
+            </TextField>
+
+            <TextField
+              select
+              label="Priority"
+              fullWidth
+              size="small"
+              value={editProjectPriority}
+              onChange={(e) => setEditProjectPriority(e.target.value)}
+            >
+              <MenuItem value="LOW">Low</MenuItem>
+              <MenuItem value="MEDIUM">Medium</MenuItem>
+              <MenuItem value="HIGH">High</MenuItem>
+              <MenuItem value="URGENT">Urgent</MenuItem>
+            </TextField>
+
+            <Box sx={{ display: "flex", alignItems: "center" }}>
+              <Checkbox
+                checked={editProjectBillable}
+                onChange={(e) => setEditProjectBillable(e.target.checked)}
+              />
+              <Typography variant="body2" fontWeight="bold">
+                Billable Project
+              </Typography>
+            </Box>
+          </Box>
+
+          <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 2 }}>
+            <TextField
+              label="Start Date"
+              type="date"
+              size="small"
+              InputLabelProps={{ shrink: true }}
+              value={editProjectStartDate}
+              onChange={(e) => setEditProjectStartDate(e.target.value)}
+            />
+            <TextField
+              label="Expected End Date"
+              type="date"
+              size="small"
+              InputLabelProps={{ shrink: true }}
+              value={editProjectEndDate}
+              onChange={(e) => setEditProjectEndDate(e.target.value)}
+            />
+          </Box>
+
+          <TextField
+            label="Project Description"
+            fullWidth
+            multiline
+            rows={3}
+            value={editProjectDesc}
+            onChange={(e) => setEditProjectDesc(e.target.value)}
+          />
+        </DialogContent>
+        <DialogActions sx={{ p: 2 }}>
+          <Button onClick={() => setEditDialogOpen(false)} disabled={submittingEdit}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            disabled={submittingEdit || !editProjectName.trim()}
+            onClick={handleSaveEdit}
+            sx={{ fontWeight: "bold" }}
+          >
+            {submittingEdit ? "Saving..." : "Save Project & Budget"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Delete Project Confirmation Dialog */}
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={() => !deleting && setDeleteDialogOpen(false)}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle sx={{ fontWeight: "bold", color: "error.main" }}>
+          Delete Project
+        </DialogTitle>
+        <DialogContent dividers>
+          <Alert severity="warning" sx={{ mb: 2 }}>
+            Are you sure you want to permanently delete <strong>{deletingProjectName}</strong>?
+          </Alert>
+          <Typography variant="body2" color="text.secondary">
+            This action will delete all project milestones, tasks, team allocations, and comments. Existing customer invoices will be kept for accounting records with the project unlinked.
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ p: 2 }}>
+          <Button onClick={() => setDeleteDialogOpen(false)} disabled={deleting}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            color="error"
+            disabled={deleting}
+            onClick={handleConfirmDelete}
+            sx={{ fontWeight: "bold" }}
+          >
+            {deleting ? "Deleting..." : "Delete Project Permanently"}
           </Button>
         </DialogActions>
       </Dialog>

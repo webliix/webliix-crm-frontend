@@ -127,6 +127,15 @@ export const projectApi = {
     }
   },
 
+  async deleteProject(id: number | string): Promise<boolean> {
+    try {
+      await http.delete(`/api/v1/projects/${id}`);
+      return true;
+    } catch {
+      return false;
+    }
+  },
+
   async updateProjectProgress(
     projectId: number | string,
     progressPercentage?: number,

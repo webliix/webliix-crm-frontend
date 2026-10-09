@@ -28,6 +28,7 @@ import HourglassTopOutlinedIcon from "@mui/icons-material/HourglassTopOutlined";
 import AddIcon from "@mui/icons-material/Add";
 import PaymentOutlinedIcon from "@mui/icons-material/PaymentOutlined";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import EditNoteOutlinedIcon from "@mui/icons-material/EditNoteOutlined";
 import { tokens } from "@/theme/tokens";
 import { invoiceApi, type InvoiceItem } from "../api/invoiceApi";
 import { customerService } from "@/modules/customers/services/customer.service";
@@ -55,6 +56,27 @@ export default function InvoiceListPage() {
   const [submittingInvoice, setSubmittingInvoice] = useState<boolean>(false);
   const [createSuccessMsg, setCreateSuccessMsg] = useState<string | null>(null);
 
+  // Edit Invoice Dialog State
+  const [editDialogOpen, setEditDialogOpen] = useState<boolean>(false);
+  const [editingInvoiceId, setEditingInvoiceId] = useState<number | null>(null);
+  const [editingInvoiceNumber, setEditingInvoiceNumber] = useState<string>("");
+  const [editStatus, setEditStatus] = useState<string>("DRAFT");
+  const [editPaidAmount, setEditPaidAmount] = useState<number>(0);
+  const [editIssueDate, setEditIssueDate] = useState<string>("");
+  const [editDueDate, setEditDueDate] = useState<string>("");
+  const [editNotes, setEditNotes] = useState<string>("");
+  const [editTax, setEditTax] = useState<number>(0);
+  const [editDiscount, setEditDiscount] = useState<number>(0);
+  const [editItems, setEditItems] = useState<{ itemName: string; description: string; quantity: number; unitPrice: number }[]>([]);
+  const [submittingEdit, setSubmittingEdit] = useState<boolean>(false);
+  const [editError, setEditError] = useState<string | null>(null);
+
+  // Delete Invoice Dialog State
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState<boolean>(false);
+  const [deletingInvoiceId, setDeletingInvoiceId] = useState<number | null>(null);
+  const [deletingInvoiceNumber, setDeletingInvoiceNumber] = useState<string>("");
+  const [deletingInvoice, setDeletingInvoice] = useState<boolean>(false);
+
   // Record Payment Dialog State
   const [paymentDialogOpen, setPaymentDialogOpen] = useState<boolean>(false);
   const [paymentInvoice, setPaymentInvoice] = useState<InvoiceItem | null>(null);
@@ -63,6 +85,98 @@ export default function InvoiceListPage() {
   const [paymentRef, setPaymentRef] = useState<string>("");
   const [paymentNotes, setPaymentNotes] = useState<string>("");
   const [submittingPayment, setSubmittingPayment] = useState<boolean>(false);
+
+  const handleOpenEdit = (inv: InvoiceItem) => {
+    setEditingInvoiceId(inv.id);
+    setEditingInvoiceNumber(inv.invoiceNumber);
+    setEditStatus(inv.status || "DRAFT");
+    setEditPaidAmount(inv.paidAmount || 0);
+    setEditIssueDate(inv.issueDate ? inv.issueDate.split("T")[0] : "");
+    setEditDueDate(inv.dueDate ? inv.dueDate.split("T")[0] : "");
+    setEditNotes(inv.notes || "");
+    setEditTax(0);
+    setEditDiscount(0);
+    setEditItems([
+      { itemName: "Consulting & Deliverables", description: "", quantity: 1, unitPrice: inv.totalAmount || 0 },
+    ]);
+    setEditError(null);
+    setEditDialogOpen(true);
+  };
+
+  const handleAddEditItem = () => {
+    setEditItems((prev) => [...prev, { itemName: "", description: "", quantity: 1, unitPrice: 0 }]);
+  };
+
+  const handleRemoveEditItem = (index: number) => {
+    setEditItems((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleEditItemChange = (index: number, field: string, val: any) => {
+    setEditItems((prev) => {
+      const next = [...prev];
+      next[index] = { ...next[index], [field]: val };
+      return next;
+    });
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingInvoiceId) return;
+    setSubmittingEdit(true);
+    setEditError(null);
+    try {
+      const updated = await invoiceApi.updateInvoice(editingInvoiceId, {
+        status: editStatus,
+        paidAmount: Number(editPaidAmount) || 0,
+        issueDate: editIssueDate || undefined,
+        dueDate: editDueDate || undefined,
+        notes: editNotes,
+        taxAmount: Number(editTax) || 0,
+        discountAmount: Number(editDiscount) || 0,
+        items: editItems.map((item) => ({
+          itemName: item.itemName || "Consulting & Services",
+          description: item.description,
+          quantity: Number(item.quantity) || 1,
+          unitPrice: Number(item.unitPrice) || 0,
+        })),
+      });
+      if (updated) {
+        setEditDialogOpen(false);
+        setEditingInvoiceId(null);
+        loadData();
+      } else {
+        setEditError("Failed to update invoice.");
+      }
+    } catch (err: any) {
+      setEditError(err?.response?.data?.message || "Failed to update invoice.");
+    } finally {
+      setSubmittingEdit(false);
+    }
+  };
+
+  const handleOpenDelete = (inv: InvoiceItem) => {
+    setDeletingInvoiceId(inv.id);
+    setDeletingInvoiceNumber(inv.invoiceNumber);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deletingInvoiceId) return;
+    setDeletingInvoice(true);
+    try {
+      const success = await invoiceApi.deleteInvoice(deletingInvoiceId);
+      if (success) {
+        setDeleteDialogOpen(false);
+        setDeletingInvoiceId(null);
+        loadData();
+      } else {
+        alert("Failed to delete invoice.");
+      }
+    } catch (err: any) {
+      alert(err?.response?.data?.message || "Failed to delete invoice.");
+    } finally {
+      setDeletingInvoice(false);
+    }
+  };
 
   const loadData = () => {
     setLoading(true);
@@ -371,17 +485,36 @@ export default function InvoiceListPage() {
                     </TableCell>
                     <TableCell>{getStatusChip(invoice.status)}</TableCell>
                     <TableCell sx={{ textAlign: "right" }}>
-                      {invoice.status !== "PAID" && (
+                      <Box sx={{ display: "flex", gap: 1, justifyContent: "flex-end", alignItems: "center" }}>
+                        {invoice.status !== "PAID" && (
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            startIcon={<PaymentOutlinedIcon />}
+                            onClick={() => handleOpenRecordPayment(invoice)}
+                            sx={{ fontWeight: "bold" }}
+                          >
+                            Record Payment
+                          </Button>
+                        )}
                         <Button
                           size="small"
                           variant="outlined"
-                          startIcon={<PaymentOutlinedIcon />}
-                          onClick={() => handleOpenRecordPayment(invoice)}
+                          startIcon={<EditNoteOutlinedIcon />}
+                          onClick={() => handleOpenEdit(invoice)}
                           sx={{ fontWeight: "bold" }}
                         >
-                          Record Payment
+                          Edit
                         </Button>
-                      )}
+                        <IconButton
+                          size="small"
+                          color="error"
+                          onClick={() => handleOpenDelete(invoice)}
+                          title="Delete Invoice"
+                        >
+                          <DeleteOutlineIcon fontSize="small" />
+                        </IconButton>
+                      </Box>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -637,6 +770,191 @@ export default function InvoiceListPage() {
             sx={{ fontWeight: "bold" }}
           >
             {submittingPayment ? "Recording..." : "Confirm & Apply Payment"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Edit Invoice Dialog */}
+      <Dialog
+        open={editDialogOpen}
+        onClose={() => !submittingEdit && setEditDialogOpen(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle sx={{ fontWeight: "bold" }}>
+          Edit Invoice {editingInvoiceNumber}
+        </DialogTitle>
+        <DialogContent dividers sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
+          {editError && <Alert severity="error">{editError}</Alert>}
+
+          <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 2 }}>
+            <TextField
+              select
+              label="Invoice Status"
+              fullWidth
+              size="small"
+              value={editStatus}
+              onChange={(e) => setEditStatus(e.target.value)}
+            >
+              <MenuItem value="DRAFT">Draft</MenuItem>
+              <MenuItem value="SENT">Sent</MenuItem>
+              <MenuItem value="PENDING">Pending</MenuItem>
+              <MenuItem value="PARTIALLY_PAID">Partially Paid</MenuItem>
+              <MenuItem value="PAID">Paid</MenuItem>
+              <MenuItem value="OVERDUE">Overdue</MenuItem>
+              <MenuItem value="CANCELLED">Cancelled</MenuItem>
+            </TextField>
+
+            <TextField
+              label="Recorded Paid Amount (₹)"
+              type="number"
+              fullWidth
+              size="small"
+              value={editPaidAmount}
+              onChange={(e) => setEditPaidAmount(Number(e.target.value))}
+            />
+          </Box>
+
+          <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 2 }}>
+            <TextField
+              label="Issue Date"
+              type="date"
+              size="small"
+              InputLabelProps={{ shrink: true }}
+              value={editIssueDate}
+              onChange={(e) => setEditIssueDate(e.target.value)}
+            />
+            <TextField
+              label="Due Date"
+              type="date"
+              size="small"
+              InputLabelProps={{ shrink: true }}
+              value={editDueDate}
+              onChange={(e) => setEditDueDate(e.target.value)}
+            />
+          </Box>
+
+          <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 2 }}>
+            <TextField
+              label="Tax Amount (₹)"
+              type="number"
+              size="small"
+              value={editTax}
+              onChange={(e) => setEditTax(Number(e.target.value))}
+            />
+            <TextField
+              label="Discount Amount (₹)"
+              type="number"
+              size="small"
+              value={editDiscount}
+              onChange={(e) => setEditDiscount(Number(e.target.value))}
+            />
+          </Box>
+
+          <Typography variant="subtitle2" fontWeight="bold">
+            Invoice Line Items
+          </Typography>
+
+          {editItems.map((item, index) => (
+            <Box key={index} sx={{ display: "flex", gap: 1.5, alignItems: "center" }}>
+              <TextField
+                placeholder="Item Description / Service"
+                size="small"
+                sx={{ flex: 3 }}
+                value={item.itemName}
+                onChange={(e) => handleEditItemChange(index, "itemName", e.target.value)}
+              />
+              <TextField
+                placeholder="Qty"
+                type="number"
+                size="small"
+                sx={{ flex: 1 }}
+                value={item.quantity}
+                onChange={(e) => handleEditItemChange(index, "quantity", Number(e.target.value))}
+              />
+              <TextField
+                placeholder="Unit Price"
+                type="number"
+                size="small"
+                sx={{ flex: 1.5 }}
+                value={item.unitPrice}
+                onChange={(e) => handleEditItemChange(index, "unitPrice", Number(e.target.value))}
+              />
+              <Typography variant="body2" fontWeight="bold" sx={{ minWidth: 70, textAlign: "right" }}>
+                ₹{(item.quantity * item.unitPrice).toLocaleString()}
+              </Typography>
+              {editItems.length > 1 && (
+                <IconButton size="small" color="error" onClick={() => handleRemoveEditItem(index)}>
+                  <DeleteOutlineIcon fontSize="small" />
+                </IconButton>
+              )}
+            </Box>
+          ))}
+
+          <Button
+            size="small"
+            startIcon={<AddIcon />}
+            onClick={handleAddEditItem}
+            sx={{ alignSelf: "flex-start", fontWeight: "bold" }}
+          >
+            Add Item
+          </Button>
+
+          <TextField
+            label="Notes & Terms"
+            multiline
+            rows={2}
+            fullWidth
+            size="small"
+            value={editNotes}
+            onChange={(e) => setEditNotes(e.target.value)}
+          />
+        </DialogContent>
+        <DialogActions sx={{ p: 2 }}>
+          <Button onClick={() => setEditDialogOpen(false)} disabled={submittingEdit}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            disabled={submittingEdit}
+            onClick={handleSaveEdit}
+            sx={{ fontWeight: "bold" }}
+          >
+            {submittingEdit ? "Saving..." : "Save Invoice Changes"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Delete Invoice Confirmation Dialog */}
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={() => !deletingInvoice && setDeleteDialogOpen(false)}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle sx={{ fontWeight: "bold", color: "error.main" }}>
+          Delete Invoice
+        </DialogTitle>
+        <DialogContent dividers>
+          <Alert severity="warning" sx={{ mb: 2 }}>
+            Are you sure you want to delete invoice <strong>{deletingInvoiceNumber}</strong>?
+          </Alert>
+          <Typography variant="body2" color="text.secondary">
+            This invoice will be permanently removed. Any associated payments will be safely unlinked.
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ p: 2 }}>
+          <Button onClick={() => setDeleteDialogOpen(false)} disabled={deletingInvoice}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            color="error"
+            disabled={deletingInvoice}
+            onClick={handleConfirmDelete}
+            sx={{ fontWeight: "bold" }}
+          >
+            {deletingInvoice ? "Deleting..." : "Delete Invoice"}
           </Button>
         </DialogActions>
       </Dialog>
