@@ -46,6 +46,7 @@ import PaymentOutlinedIcon from "@mui/icons-material/PaymentOutlined";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import PeopleOutlineIcon from "@mui/icons-material/PeopleOutline";
 import PersonAddAlt1OutlinedIcon from "@mui/icons-material/PersonAddAlt1Outlined";
+import AssignmentTurnedInOutlinedIcon from "@mui/icons-material/AssignmentTurnedInOutlined";
 import { http } from "@/shared/services/http";
 import {
   projectApi,
@@ -138,6 +139,45 @@ export default function ProjectDetailPage() {
   const [paymentNotes, setPaymentNotes] = useState<string>("");
   const [submittingPayment, setSubmittingPayment] = useState<boolean>(false);
 
+  // Payment Submission Review State
+  const [selectedSubmissionForReview, setSelectedSubmissionForReview] = useState<any | null>(null);
+  const [reviewSubmissionOpen, setReviewSubmissionOpen] = useState<boolean>(false);
+  const [reviewStatus, setReviewStatus] = useState<"APPROVED" | "REJECTED">("APPROVED");
+  const [reviewNotes, setReviewNotes] = useState<string>("");
+  const [submittingReview, setSubmittingReview] = useState<boolean>(false);
+  const [reviewSuccessMsg, setReviewSuccessMsg] = useState<string | null>(null);
+  const [projectWorkLogs, setProjectWorkLogs] = useState<any[]>([]);
+
+  const handleOpenReviewSubmission = (submission: any, status: "APPROVED" | "REJECTED") => {
+    setSelectedSubmissionForReview(submission);
+    setReviewStatus(status);
+    setReviewNotes("");
+    setReviewSubmissionOpen(true);
+  };
+
+  const handleConfirmReviewSubmission = async () => {
+    if (!selectedSubmissionForReview) return;
+    setSubmittingReview(true);
+    try {
+      await http.patch(`/api/v1/payment-submissions/${selectedSubmissionForReview.id}/review`, {
+        status: reviewStatus,
+        reviewNotes: reviewNotes.trim(),
+      });
+      setReviewSuccessMsg(
+        reviewStatus === "APPROVED"
+          ? "Billing accepted! An official paid invoice has been generated, payment recorded, and client remaining balance updated."
+          : "Billing submission rejected."
+      );
+      setReviewSubmissionOpen(false);
+      setSelectedSubmissionForReview(null);
+      loadData();
+    } catch (err: any) {
+      alert(err?.response?.data?.message || "Failed to review payment submission.");
+    } finally {
+      setSubmittingReview(false);
+    }
+  };
+
   const loadData = () => {
     if (!id) return;
     setLoading(true);
@@ -151,7 +191,8 @@ export default function ProjectDetailPage() {
       documentService.getDocuments({ module: "PROJECT", referenceId: Number(id) }),
       invoiceApi.getProjectBilling(id),
       projectApi.getProjectMembers(id),
-    ]).then(([projData, msData, taskData, commentData, ticketData, docData, billingData, memberData]) => {
+      projectApi.getProjectWorkLogs(id),
+    ]).then(([projData, msData, taskData, commentData, ticketData, docData, billingData, memberData, workLogsData]) => {
       setProject(projData);
       if (projData) {
         setProgressVal(projData.progressPercentage || 0);
@@ -166,6 +207,7 @@ export default function ProjectDetailPage() {
       setProjectDocuments(docData || []);
       setProjectBilling(billingData);
       setMembers(memberData || []);
+      setProjectWorkLogs(workLogsData || []);
       setLoading(false);
     });
   };
@@ -398,9 +440,17 @@ export default function ProjectDetailPage() {
   const handleRemoveMember = async (memberId: number) => {
     if (!id) return;
     if (window.confirm("Are you sure you want to remove this team member from the project?")) {
-      const ok = await projectApi.removeProjectMember(id, memberId);
-      if (ok) {
-        setMembers((prev) => prev.filter((m) => m.id !== memberId));
+      try {
+        const ok = await projectApi.removeProjectMember(id, memberId);
+        if (ok) {
+          setMembers((prev) => prev.filter((m) => m.id !== memberId));
+          const updated = await projectApi.getProjectMembers(id);
+          setMembers(updated);
+        } else {
+          alert("Failed to remove team member from project.");
+        }
+      } catch (err: any) {
+        alert(err?.response?.data?.message || "Failed to remove team member from project.");
       }
     }
   };
@@ -827,6 +877,125 @@ export default function ProjectDetailPage() {
               </Typography>
             </Box>
           )}
+
+          {/* Employee Billing & Payment Submissions */}
+          <Divider sx={{ my: 3 }} />
+          <Box sx={{ mb: 2 }}>
+            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 1 }}>
+              <Box>
+                <Typography variant="subtitle1" fontWeight="bold">
+                  Employee Billing & Payment Submissions ({projectBilling?.paymentSubmissions?.length || 0})
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Bills submitted by assigned employees. Approving will automatically generate an official PAID invoice and update project financial totals.
+                </Typography>
+              </Box>
+              {reviewSuccessMsg && (
+                <Alert severity="success" sx={{ py: 0, px: 2, fontSize: "0.8125rem", fontWeight: "bold" }}>
+                  {reviewSuccessMsg}
+                </Alert>
+              )}
+            </Box>
+          </Box>
+
+          {projectBilling?.paymentSubmissions && projectBilling.paymentSubmissions.length > 0 ? (
+            <TableContainer sx={{ border: 1, borderColor: "divider", borderRadius: 2 }}>
+              <Table size="small">
+                <TableHead sx={{ bgcolor: "action.hover" }}>
+                  <TableRow>
+                    <TableCell sx={{ fontWeight: "bold" }}>Date</TableCell>
+                    <TableCell sx={{ fontWeight: "bold" }}>Employee</TableCell>
+                    <TableCell sx={{ fontWeight: "bold" }}>Amount</TableCell>
+                    <TableCell sx={{ fontWeight: "bold" }}>Payment Method & Ref</TableCell>
+                    <TableCell sx={{ fontWeight: "bold" }}>Notes / Summary</TableCell>
+                    <TableCell sx={{ fontWeight: "bold" }}>Status</TableCell>
+                    <TableCell sx={{ fontWeight: "bold", textAlign: "right" }}>Actions</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {projectBilling.paymentSubmissions.map((sub: any) => (
+                    <TableRow key={sub.id} hover>
+                      <TableCell sx={{ whiteSpace: "nowrap" }}>
+                        {sub.paymentDate ? new Date(sub.paymentDate).toLocaleDateString() : "—"}
+                      </TableCell>
+                      <TableCell sx={{ fontWeight: "bold" }}>
+                        {sub.employeeName || "Employee"}
+                      </TableCell>
+                      <TableCell sx={{ fontWeight: "bold", color: "primary.main" }}>
+                        ₹{(sub.amount || 0).toLocaleString()}
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2" fontWeight={600}>
+                          {sub.paymentMethod || "—"}
+                        </Typography>
+                        {sub.referenceNumber && (
+                          <Typography variant="caption" color="text.secondary" display="block">
+                            Ref: {sub.referenceNumber}
+                          </Typography>
+                        )}
+                      </TableCell>
+                      <TableCell sx={{ maxWidth: 240 }}>
+                        <Typography variant="body2" color="text.secondary">
+                          {sub.notes || "—"}
+                        </Typography>
+                        {sub.reviewNotes && (
+                          <Typography variant="caption" color="text.secondary" sx={{ fontStyle: "italic", display: "block" }}>
+                            Admin note: {sub.reviewNotes}
+                          </Typography>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={sub.status}
+                          size="small"
+                          color={sub.status === "APPROVED" ? "success" : sub.status === "REJECTED" ? "error" : "warning"}
+                          sx={{ fontWeight: "bold" }}
+                        />
+                      </TableCell>
+                      <TableCell sx={{ textAlign: "right", whiteSpace: "nowrap" }}>
+                        {sub.status === "PENDING_REVIEW" ? (
+                          <Box sx={{ display: "inline-flex", gap: 1 }}>
+                            <Button
+                              size="small"
+                              variant="contained"
+                              color="success"
+                              onClick={() => handleOpenReviewSubmission(sub, "APPROVED")}
+                              sx={{ fontWeight: "bold", textTransform: "none" }}
+                            >
+                              Accept (Approve & Invoice)
+                            </Button>
+                            <Button
+                              size="small"
+                              variant="outlined"
+                              color="error"
+                              onClick={() => handleOpenReviewSubmission(sub, "REJECTED")}
+                              sx={{ fontWeight: "bold", textTransform: "none" }}
+                            >
+                              Reject
+                            </Button>
+                          </Box>
+                        ) : sub.status === "APPROVED" ? (
+                          <Typography variant="caption" color="success.main" fontWeight="bold">
+                            ✓ Invoiced {sub.linkedInvoiceId ? `(#${sub.linkedInvoiceId})` : ""}
+                          </Typography>
+                        ) : (
+                          <Typography variant="caption" color="text.secondary">
+                            Reviewed
+                          </Typography>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          ) : (
+            <Box sx={{ p: 2, textAlign: "center", bgcolor: "action.hover", borderRadius: 2, border: "1px dashed", borderColor: "divider" }}>
+              <Typography variant="body2" color="text.secondary">
+                No billing submissions submitted by employees for this project yet.
+              </Typography>
+            </Box>
+          )}
         </CardContent>
       </Card>
 
@@ -945,6 +1114,121 @@ export default function ProjectDetailPage() {
               >
                 Assign First Team Member
               </Button>
+            </Box>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Employee Daily Tasks & Work Submissions */}
+      <Card variant="outlined" sx={{ borderRadius: 2, mb: 3 }}>
+        <CardContent sx={{ p: 3 }}>
+          <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 2, mb: 2 }}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+              <AssignmentTurnedInOutlinedIcon color="primary" />
+              <Box>
+                <Typography variant="h6" fontWeight="bold">
+                  Employee Daily Tasks & Work Submissions ({projectWorkLogs.length})
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Daily logs, sprint tasks, work units, and incremental costs submitted by employees on this project.
+                </Typography>
+              </Box>
+            </Box>
+            <Chip
+              label={`Accumulated Day Cost: ₹${projectWorkLogs
+                .reduce((acc: number, item: any) => acc + (Number(item.workCost) || 0), 0)
+                .toLocaleString()}`}
+              color="primary"
+              variant="outlined"
+              sx={{ fontWeight: "bold" }}
+            />
+          </Box>
+
+          {projectWorkLogs.length > 0 ? (
+            <TableContainer sx={{ border: 1, borderColor: "divider", borderRadius: 2 }}>
+              <Table size="small">
+                <TableHead sx={{ bgcolor: "action.hover" }}>
+                  <TableRow>
+                    <TableCell sx={{ fontWeight: "bold" }}>Date</TableCell>
+                    <TableCell sx={{ fontWeight: "bold" }}>Employee</TableCell>
+                    <TableCell sx={{ fontWeight: "bold" }}>Work Summary</TableCell>
+                    <TableCell sx={{ fontWeight: "bold" }}>Tasks Completed</TableCell>
+                    <TableCell sx={{ fontWeight: "bold" }}>Hours / Units</TableCell>
+                    <TableCell sx={{ fontWeight: "bold" }}>Day Cost Added</TableCell>
+                    <TableCell sx={{ fontWeight: "bold" }}>Status</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {projectWorkLogs.map((log: any) => (
+                    <TableRow key={log.id} hover>
+                      <TableCell sx={{ whiteSpace: "nowrap", fontWeight: 600 }}>
+                        {log.logDate ? new Date(log.logDate).toLocaleDateString() : "—"}
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2" fontWeight="bold">
+                          {log.employeeName || "Employee"}
+                        </Typography>
+                        {log.employeeCode && (
+                          <Typography variant="caption" color="text.secondary">
+                            {log.employeeCode}
+                          </Typography>
+                        )}
+                      </TableCell>
+                      <TableCell sx={{ maxWidth: 300 }}>
+                        <Typography variant="body2" fontWeight={600}>
+                          {log.workSummary}
+                        </Typography>
+                        {log.taskTitle && (
+                          <Typography variant="caption" color="primary.main" display="block">
+                            Task: {log.taskTitle}
+                          </Typography>
+                        )}
+                        {log.blockers && (
+                          <Typography variant="caption" color="error.main" display="block">
+                            Blockers: {log.blockers}
+                          </Typography>
+                        )}
+                        {log.reviewNotes && (
+                          <Typography variant="caption" color="text.secondary" sx={{ fontStyle: "italic", display: "block" }}>
+                            Review Note: {log.reviewNotes}
+                          </Typography>
+                        )}
+                      </TableCell>
+                      <TableCell sx={{ maxWidth: 220 }}>
+                        <Typography variant="body2" color="text.secondary">
+                          {log.tasksCompleted || "—"}
+                        </Typography>
+                      </TableCell>
+                      <TableCell sx={{ whiteSpace: "nowrap" }}>
+                        {log.workUnits || log.hoursWorked ? `${log.workUnits || log.hoursWorked} hrs/units` : "—"}
+                      </TableCell>
+                      <TableCell sx={{ whiteSpace: "nowrap" }}>
+                        {log.workCost && Number(log.workCost) > 0 ? (
+                          <Typography variant="body2" fontWeight="bold" sx={{ color: "success.main" }}>
+                            +₹{Number(log.workCost).toLocaleString()}
+                          </Typography>
+                        ) : (
+                          <Typography variant="body2" color="text.secondary">—</Typography>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={log.status}
+                          size="small"
+                          color={log.status === "APPROVED" ? "success" : log.status === "REJECTED" ? "error" : "warning"}
+                          sx={{ fontWeight: "bold" }}
+                        />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          ) : (
+            <Box sx={{ p: 3, textAlign: "center", bgcolor: "action.hover", borderRadius: 2, border: "1px dashed", borderColor: "divider" }}>
+              <Typography variant="body2" color="text.secondary">
+                No daily tasks or work logs submitted for this project yet.
+              </Typography>
             </Box>
           )}
         </CardContent>
@@ -1764,6 +2048,71 @@ export default function ProjectDetailPage() {
           loadData();
         }}
       />
+
+      {/* Review Payment Submission Dialog */}
+      <Dialog
+        open={reviewSubmissionOpen}
+        onClose={() => !submittingReview && setReviewSubmissionOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle sx={{ fontWeight: "bold" }}>
+          {reviewStatus === "APPROVED" ? "Accept & Approve Employee Billing" : "Reject Employee Billing"}
+        </DialogTitle>
+        <DialogContent dividers>
+          {selectedSubmissionForReview && (
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+              <Alert severity={reviewStatus === "APPROVED" ? "info" : "warning"}>
+                {reviewStatus === "APPROVED"
+                  ? `Approving this submission of ₹${(selectedSubmissionForReview.amount || 0).toLocaleString()} will automatically generate an official PAID invoice for the client, credit the project payments, and update remaining balances.`
+                  : `Rejecting this submission of ₹${(selectedSubmissionForReview.amount || 0).toLocaleString()} will mark it as rejected and notify the employee.`}
+              </Alert>
+
+              <Box sx={{ p: 2, bgcolor: "action.hover", borderRadius: 2 }}>
+                <Typography variant="subtitle2" fontWeight="bold">
+                  Submitted By: {selectedSubmissionForReview.employeeName || "Employee"}
+                </Typography>
+                <Typography variant="body2">
+                  Amount: ₹{(selectedSubmissionForReview.amount || 0).toLocaleString()} • Date: {selectedSubmissionForReview.paymentDate}
+                </Typography>
+                {selectedSubmissionForReview.notes && (
+                  <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.5 }}>
+                    Note: {selectedSubmissionForReview.notes}
+                  </Typography>
+                )}
+              </Box>
+
+              <TextField
+                label="Admin Review Note (Optional)"
+                fullWidth
+                multiline
+                rows={2}
+                placeholder={reviewStatus === "APPROVED" ? "e.g. Verified client payment receipt." : "e.g. Please correct the amount or attach proof."}
+                value={reviewNotes}
+                onChange={(e) => setReviewNotes(e.target.value)}
+              />
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ p: 2 }}>
+          <Button onClick={() => setReviewSubmissionOpen(false)} disabled={submittingReview}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            color={reviewStatus === "APPROVED" ? "success" : "error"}
+            disabled={submittingReview}
+            onClick={handleConfirmReviewSubmission}
+            sx={{ fontWeight: "bold" }}
+          >
+            {submittingReview
+              ? "Processing..."
+              : reviewStatus === "APPROVED"
+              ? "Confirm & Issue Paid Invoice"
+              : "Confirm Rejection"}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </PageLayout>
   );
 }

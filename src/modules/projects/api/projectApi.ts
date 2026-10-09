@@ -265,6 +265,15 @@ export const projectApi = {
       return false;
     }
   },
+
+  async getProjectWorkLogs(projectId: number | string): Promise<any[]> {
+    try {
+      const res = await http.get(`/api/v1/projects/${projectId}/work-logs`);
+      return res.data?.data ?? [];
+    } catch {
+      return [];
+    }
+  },
 };
 
 export interface ProjectMemberItem {
