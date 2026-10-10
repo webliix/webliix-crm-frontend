@@ -371,6 +371,33 @@ export function CustomerDetailsDrawer({
                       {customer.lifetimeValue ? formatCurrency(customer.lifetimeValue) : "₹0"}
                     </Typography>
                   </Box>
+
+                  <Box>
+                    <Typography variant="caption" color="text.secondary" display="block">
+                      Active Projects / Engagements
+                    </Typography>
+                    <Typography variant="body2" fontWeight={700} color={tokens.colors.primary.main}>
+                      {projects.length} Total Projects ({projects.filter((p: any) => p.status === "IN_PROGRESS" || p.status === "ACTIVE").length} in active sprint)
+                    </Typography>
+                  </Box>
+
+                  <Box>
+                    <Typography variant="caption" color="text.secondary" display="block">
+                      Invoicing & Settled Payments
+                    </Typography>
+                    <Typography variant="body2" fontWeight={700} color={tokens.colors.secondary[900]}>
+                      {invoices.length} Invoices ({invoices.filter((i: any) => i.status === "PAID").length} settled)
+                    </Typography>
+                  </Box>
+
+                  <Box>
+                    <Typography variant="caption" color="text.secondary" display="block">
+                      Support Tickets
+                    </Typography>
+                    <Typography variant="body2" fontWeight={700} color={tokens.colors.warning[700]}>
+                      {tickets.length} Tickets ({tickets.filter((t: any) => t.status === "OPEN" || t.status === "IN_PROGRESS").length} pending action)
+                    </Typography>
+                  </Box>
                 </Box>
 
                 <Divider />

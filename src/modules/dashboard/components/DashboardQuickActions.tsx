@@ -62,6 +62,15 @@ export function DashboardQuickActions() {
           >
             Invoices & Billing
           </Button>
+
+          <Button
+            variant="outlined"
+            startIcon={<ReceiptOutlinedIcon sx={{ fontSize: 18 }} />}
+            onClick={() => navigate("/expenses")}
+            sx={{ fontWeight: "bold" }}
+          >
+            Manage Expenses
+          </Button>
         </Stack>
       </CardContent>
     </Card>

@@ -56,9 +56,10 @@ export function DashboardStats() {
         gridTemplateColumns: {
           xs: "1fr",
           sm: "repeat(2, 1fr)",
-          lg: "repeat(4, 1fr)",
+          md: "repeat(3, 1fr)",
+          lg: "repeat(5, 1fr)",
         },
-        gap: 3,
+        gap: 2.5,
       }}
     >
       <Card
@@ -148,6 +149,29 @@ export function DashboardStats() {
             </Typography>
             <Typography variant="body2" color="text.secondary" fontWeight={500}>
               Customer Base ({activeCustomers} active)
+            </Typography>
+          </Box>
+        </CardContent>
+      </Card>
+
+      <Card
+        variant="outlined"
+        sx={{
+          borderRadius: 2,
+          cursor: "pointer",
+          transition: "all 0.2s ease",
+          "&:hover": { borderColor: "error.main", boxShadow: 1, transform: "translateY(-2px)" },
+        }}
+        onClick={() => navigate("/expenses")}
+      >
+        <CardContent sx={{ display: "flex", alignItems: "center", gap: 2.5, p: 2.5 }}>
+          <AccountBalanceWalletOutlinedIcon color="error" sx={{ fontSize: 38 }} />
+          <Box>
+            <Typography variant="h5" fontWeight="bold" color="error.main">
+              Expenses
+            </Typography>
+            <Typography variant="body2" color="text.secondary" fontWeight={500}>
+              Operational Spend & Bills
             </Typography>
           </Box>
         </CardContent>

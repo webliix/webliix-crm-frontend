@@ -21,6 +21,17 @@ export interface InvoiceItem {
     projectName: string;
     projectCode: string;
   };
+  subtotal?: number;
+  taxAmount?: number;
+  discountAmount?: number;
+  items?: {
+    id?: number;
+    itemName: string;
+    description?: string;
+    quantity: number;
+    unitPrice: number;
+    totalPrice?: number;
+  }[];
   createdAt?: string;
   updatedAt?: string;
 }

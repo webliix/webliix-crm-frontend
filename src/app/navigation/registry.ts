@@ -7,11 +7,12 @@ export function getVisibleNavigationItems(user: CurrentUser | null | undefined):
     return menuItems;
   }
 
-  const isSuperAdmin = user.roles?.some(
-    (r) => r.toUpperCase() === "SUPER_ADMIN" || r.toUpperCase() === "ROLE_SUPER_ADMIN"
-  );
+  const isAdmin = user.roles?.some((r) => {
+    const clean = r.toUpperCase().replace(/^ROLE_/, "");
+    return clean === "SUPER_ADMIN" || clean === "ADMIN";
+  });
 
-  if (isSuperAdmin || user.permissions?.includes("*")) {
+  if (isAdmin || user.permissions?.includes("*")) {
     return menuItems;
   }
 

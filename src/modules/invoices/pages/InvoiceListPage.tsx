@@ -29,6 +29,9 @@ import AddIcon from "@mui/icons-material/Add";
 import PaymentOutlinedIcon from "@mui/icons-material/PaymentOutlined";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import EditNoteOutlinedIcon from "@mui/icons-material/EditNoteOutlined";
+import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
+import PrintOutlinedIcon from "@mui/icons-material/PrintOutlined";
+import Divider from "@mui/material/Divider";
 import { tokens } from "@/theme/tokens";
 import { invoiceApi, type InvoiceItem } from "../api/invoiceApi";
 import { customerService } from "@/modules/customers/services/customer.service";
@@ -85,6 +88,18 @@ export default function InvoiceListPage() {
   const [paymentRef, setPaymentRef] = useState<string>("");
   const [paymentNotes, setPaymentNotes] = useState<string>("");
   const [submittingPayment, setSubmittingPayment] = useState<boolean>(false);
+
+  // Preview / Print Official Invoice State
+  const [previewInvoice, setPreviewInvoice] = useState<InvoiceItem | null>(null);
+
+  const handleOpenPreview = async (inv: InvoiceItem) => {
+    try {
+      const details = await invoiceApi.getInvoice(inv.id);
+      setPreviewInvoice(details || inv);
+    } catch {
+      setPreviewInvoice(inv);
+    }
+  };
 
   const handleOpenEdit = (inv: InvoiceItem) => {
     setEditingInvoiceId(inv.id);
@@ -497,6 +512,15 @@ export default function InvoiceListPage() {
                             Record Payment
                           </Button>
                         )}
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          startIcon={<VisibilityOutlinedIcon />}
+                          onClick={() => handleOpenPreview(invoice)}
+                          sx={{ fontWeight: "bold" }}
+                        >
+                          View / Print
+                        </Button>
                         <Button
                           size="small"
                           variant="outlined"
@@ -957,6 +981,243 @@ export default function InvoiceListPage() {
             {deletingInvoice ? "Deleting..." : "Delete Invoice"}
           </Button>
         </DialogActions>
+      </Dialog>
+
+      {/* Official Invoice Statement Preview & Print Dialog */}
+      <Dialog
+        open={Boolean(previewInvoice)}
+        onClose={() => setPreviewInvoice(null)}
+        maxWidth="md"
+        fullWidth
+        PaperProps={{
+          id: "printable-crm-invoice-modal",
+          sx: {
+            borderRadius: 2,
+            "@media print": {
+              boxShadow: "none",
+              margin: 0,
+              maxWidth: "100%",
+              width: "100%",
+            },
+          },
+        }}
+      >
+        <DialogTitle
+          sx={{
+            p: 2.5,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            borderBottom: "1px solid #e2e8f0",
+            "@media print": { display: "none" },
+          }}
+        >
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <ReceiptLongOutlinedIcon color="primary" />
+            <Typography variant="h6" fontWeight="bold">
+              Official Tax Invoice — {previewInvoice?.invoiceNumber}
+            </Typography>
+          </Box>
+          <Box sx={{ display: "flex", gap: 1 }}>
+            <Button
+              variant="contained"
+              startIcon={<PrintOutlinedIcon />}
+              onClick={() => window.print()}
+              sx={{ fontWeight: "bold" }}
+            >
+              Print / Save PDF
+            </Button>
+            <Button onClick={() => setPreviewInvoice(null)}>Close</Button>
+          </Box>
+        </DialogTitle>
+
+        <DialogContent sx={{ p: { xs: 2.5, sm: 4 } }}>
+          {previewInvoice && (
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
+              {/* Header: Logo and Invoice Date */}
+              <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", pb: 1.5, borderBottom: "2px solid #0f172a" }}>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                  <Box
+                    component="img"
+                    src="https://res.cloudinary.com/vhth8clt/image/upload/v1788210409/logo.png"
+                    alt="Webliix Logo"
+                    sx={{ height: 38, objectFit: "contain" }}
+                  />
+                  <Typography variant="h5" fontWeight={900} sx={{ letterSpacing: "-0.5px", color: "#0f172a" }}>
+                    webliix
+                  </Typography>
+                </Box>
+                <Box sx={{ textAlign: "right" }}>
+                  <Typography variant="body2" fontWeight={800} color="#0f172a">
+                    DATE: {previewInvoice.issueDate ? new Date(previewInvoice.issueDate).toLocaleDateString("en-GB") : new Date().toLocaleDateString("en-GB")}
+                  </Typography>
+                </Box>
+              </Box>
+
+              {/* Invoice Title */}
+              <Box sx={{ textAlign: "center", my: 1 }}>
+                <Typography variant="h4" fontWeight={900} letterSpacing="0.05em" sx={{ color: "#0f172a" }}>
+                  INVOICE #{previewInvoice.invoiceNumber || "0154"}
+                </Typography>
+              </Box>
+
+              {/* Bill to / Ship to Grid */}
+              <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 3, border: "1px solid #cbd5e1", borderRadius: 1.5, p: 2, bgcolor: "#f8fafc" }}>
+                <Box>
+                  <Typography variant="subtitle2" fontWeight={900} color="#0f172a" sx={{ borderBottom: "1px solid #cbd5e1", pb: 0.5, mb: 1 }}>
+                    Bill to:
+                  </Typography>
+                  <Typography variant="body2"><strong>Client:</strong> {previewInvoice.customer?.companyName || previewInvoice.customer?.contactPerson || "Webliix Client"}</Typography>
+                  <Typography variant="body2"><strong>Contact Person:</strong> {previewInvoice.customer?.contactPerson || previewInvoice.customer?.companyName || "Authorized Signatory"}</Typography>
+                  <Typography variant="body2"><strong>Client ID#:</strong> #{previewInvoice.customer?.id || previewInvoice.id}</Typography>
+                  <Typography variant="body2"><strong>Project:</strong> {previewInvoice.project?.projectName || "Engineering Services"}</Typography>
+                </Box>
+
+                <Box>
+                  <Typography variant="subtitle2" fontWeight={900} color="#0f172a" sx={{ borderBottom: "1px solid #cbd5e1", pb: 0.5, mb: 1 }}>
+                    Ship to:
+                  </Typography>
+                  <Typography variant="body2"><strong>Recipient:</strong> {previewInvoice.customer?.companyName || "Webliix Client"}</Typography>
+                  <Typography variant="body2"><strong>Delivery:</strong> Digital Delivery / Remote Production Deployment</Typography>
+                  <Typography variant="body2"><strong>Status:</strong> {previewInvoice.status || "DRAFT"}</Typography>
+                  <Typography variant="body2"><strong>Platform:</strong> webliix.com</Typography>
+                </Box>
+              </Box>
+
+              {/* Sub-grid: Payment Due, Salesperson, Terms, Status */}
+              <Box sx={{ display: "grid", gridTemplateColumns: { xs: "repeat(2, 1fr)", sm: "repeat(4, 1fr)" }, gap: 1.5, border: "1px solid #cbd5e1", borderRadius: 1, p: 1.5, bgcolor: "#f1f5f9", textAlign: "center" }}>
+                <Box>
+                  <Typography variant="caption" fontWeight={800} color="text.secondary">PAYMENT DUE</Typography>
+                  <Typography variant="body2" fontWeight={800}>{previewInvoice.dueDate ? new Date(previewInvoice.dueDate).toLocaleDateString("en-GB") : "Upon Receipt"}</Typography>
+                </Box>
+                <Box>
+                  <Typography variant="caption" fontWeight={800} color="text.secondary">SALESPERSON / LEAD</Typography>
+                  <Typography variant="body2" fontWeight={800}>Webliix Direct</Typography>
+                </Box>
+                <Box>
+                  <Typography variant="caption" fontWeight={800} color="text.secondary">PAYMENT TERMS</Typography>
+                  <Typography variant="body2" fontWeight={800}>Contractual Schedule</Typography>
+                </Box>
+                <Box>
+                  <Typography variant="caption" fontWeight={800} color="text.secondary">PAYMENT STATE</Typography>
+                  <Typography variant="body2" fontWeight={800} color={previewInvoice.status === "PAID" ? "success.main" : "warning.main"}>
+                    Paid: ₹{(previewInvoice.paidAmount || 0).toLocaleString()}/-
+                  </Typography>
+                </Box>
+              </Box>
+
+              {/* Itemized Table */}
+              <TableContainer sx={{ border: "1px solid #cbd5e1", borderRadius: 1 }}>
+                <Table size="small">
+                  <TableHead sx={{ bgcolor: "#0f172a" }}>
+                    <TableRow>
+                      <TableCell sx={{ color: "#ffffff", fontWeight: 800 }}>Qty.</TableCell>
+                      <TableCell sx={{ color: "#ffffff", fontWeight: 800 }}>Item#</TableCell>
+                      <TableCell sx={{ color: "#ffffff", fontWeight: 800 }}>Description</TableCell>
+                      <TableCell sx={{ color: "#ffffff", fontWeight: 800, textAlign: "right" }}>Unit price</TableCell>
+                      <TableCell sx={{ color: "#ffffff", fontWeight: 800, textAlign: "right" }}>Discount</TableCell>
+                      <TableCell sx={{ color: "#ffffff", fontWeight: 800, textAlign: "right" }}>Line total</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {previewInvoice.items && previewInvoice.items.length > 0 ? (
+                      previewInvoice.items.map((item, idx) => (
+                        <TableRow key={idx} sx={{ "&:nth-of-type(even)": { bgcolor: "#f8fafc" } }}>
+                          <TableCell sx={{ fontWeight: 600 }}>{item.quantity || 1}</TableCell>
+                          <TableCell sx={{ fontWeight: 600 }}>{idx + 1}</TableCell>
+                          <TableCell>
+                            <Typography variant="body2" fontWeight={700}>{item.itemName}</Typography>
+                            {item.description && <Typography variant="caption" color="text.secondary">{item.description}</Typography>}
+                          </TableCell>
+                          <TableCell sx={{ textAlign: "right", fontWeight: 600 }}>₹{(item.unitPrice || 0).toLocaleString()}/-</TableCell>
+                          <TableCell sx={{ textAlign: "right", fontWeight: 600 }}>₹0/-</TableCell>
+                          <TableCell sx={{ textAlign: "right", fontWeight: 800 }}>₹{(item.totalPrice || (item.quantity * item.unitPrice) || 0).toLocaleString()}/-</TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell sx={{ fontWeight: 600 }}>1</TableCell>
+                        <TableCell sx={{ fontWeight: 600 }}>01</TableCell>
+                        <TableCell>
+                          <Typography variant="body2" fontWeight={700}>
+                            {previewInvoice.project?.projectName || "Software Engineering & Architecture Deliverables"}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            Delivery milestones, cloud deployment & engineering sprint
+                          </Typography>
+                        </TableCell>
+                        <TableCell sx={{ textAlign: "right", fontWeight: 600 }}>₹{(previewInvoice.totalAmount || 0).toLocaleString()}/-</TableCell>
+                        <TableCell sx={{ textAlign: "right", fontWeight: 600 }}>₹{(previewInvoice.discountAmount || 0).toLocaleString()}/-</TableCell>
+                        <TableCell sx={{ textAlign: "right", fontWeight: 800 }}>₹{(previewInvoice.totalAmount || 0).toLocaleString()}/-</TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+
+              {/* Financial Totals Block */}
+              <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
+                <Box sx={{ width: { xs: "100%", sm: 380 }, border: "1px solid #cbd5e1", borderRadius: 1.5, p: 2, bgcolor: "#f8fafc", display: "flex", flexDirection: "column", gap: 1 }}>
+                  <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                    <Typography variant="body2" color="text.secondary" fontWeight={600}>Total Discount:</Typography>
+                    <Typography variant="body2" fontWeight={700}>₹{(previewInvoice.discountAmount || 0).toLocaleString()}/-</Typography>
+                  </Box>
+                  <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                    <Typography variant="body2" color="text.secondary" fontWeight={600}>Subtotal:</Typography>
+                    <Typography variant="body2" fontWeight={700}>₹{(previewInvoice.subtotal || previewInvoice.totalAmount || 0).toLocaleString()}/-</Typography>
+                  </Box>
+                  <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                    <Typography variant="body2" color="success.main" fontWeight={700}>Paid Amount:</Typography>
+                    <Typography variant="body2" fontWeight={800} color="success.main">₹{(previewInvoice.paidAmount || 0).toLocaleString()}/-</Typography>
+                  </Box>
+                  
+                  {/* Status: Remaining Payment Pill Bar */}
+                  <Box sx={{ p: 1.25, bgcolor: (previewInvoice.pendingAmount || 0) > 0 ? "#fef3c7" : "#dcfce7", borderRadius: 1, border: `1px solid ${(previewInvoice.pendingAmount || 0) > 0 ? "#f59e0b" : "#16a34a"}`, textAlign: "center" }}>
+                    <Typography variant="subtitle2" fontWeight={900} color={(previewInvoice.pendingAmount || 0) > 0 ? "#b45309" : "#15803d"}>
+                      Status: Remaining Payment of ₹{(previewInvoice.pendingAmount ?? ((previewInvoice.totalAmount || 0) - (previewInvoice.paidAmount || 0))).toLocaleString()}/-
+                    </Typography>
+                  </Box>
+
+                  <Divider />
+                  <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <Typography variant="h6" fontWeight={900}>Total:</Typography>
+                    <Typography variant="h5" fontWeight={900} color="primary.main">
+                      ₹{(previewInvoice.totalAmount || 0).toLocaleString()}/-
+                    </Typography>
+                  </Box>
+                </Box>
+              </Box>
+
+              {/* Official Thank you & Authorized Signatory */}
+              <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", pt: 2, borderTop: "1px dashed #cbd5e1" }}>
+                <Box>
+                  <Typography variant="h6" fontWeight={800} sx={{ fontStyle: "italic", color: "#0f172a" }}>
+                    Thank you for your business!
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 0.5 }}>
+                    For billing support or payment confirmation: contact@webliix.com | +91 93101 81569
+                  </Typography>
+                </Box>
+                <Box sx={{ textAlign: "center" }}>
+                  <Typography variant="body1" sx={{ fontFamily: "cursive", fontStyle: "italic", fontWeight: 700, color: "#1e293b", minHeight: 28 }}>
+                    Himanshu Sharma
+                  </Typography>
+                  <Box sx={{ width: 140, height: 1, bgcolor: "#334155", my: 0.5, mx: "auto" }} />
+                  <Typography variant="caption" fontWeight={700} color="#475569" sx={{ display: "block" }}>
+                    Authorized Signatory
+                  </Typography>
+                </Box>
+              </Box>
+
+              {/* Official Footer */}
+              <Box sx={{ textAlign: "center", pt: 1, borderTop: "2px solid #0f172a" }}>
+                <Typography variant="caption" fontWeight={700} color="#334155" sx={{ display: "block" }}>
+                  B-34, Galaxy Blue Sapphire Plaza, Greater Noida West Sector 4, Uttar Pradesh 201305 | contact@webliix.com | +91 93101 81569 | webliix.com
+                </Typography>
+              </Box>
+            </Box>
+          )}
+        </DialogContent>
       </Dialog>
     </Box>
   );

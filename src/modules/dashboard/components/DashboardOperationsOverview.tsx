@@ -9,10 +9,15 @@ import Chip from "@mui/material/Chip";
 import ReceiptLongOutlinedIcon from "@mui/icons-material/ReceiptLongOutlined";
 import AssignmentTurnedInOutlinedIcon from "@mui/icons-material/AssignmentTurnedInOutlined";
 import SupportAgentOutlinedIcon from "@mui/icons-material/SupportAgentOutlined";
+import { useNavigate } from "react-router-dom";
+import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
+import IconButton from "@mui/material/IconButton";
+import Tooltip from "@mui/material/Tooltip";
 import { useDashboard } from "@/modules/dashboard/hooks/useDashboard";
 
 export function DashboardOperationsOverview() {
   const { data } = useDashboard();
+  const navigate = useNavigate();
 
   if (!data) return null;
 
@@ -46,11 +51,27 @@ export function DashboardOperationsOverview() {
       }}
     >
       {/* Financial Health */}
-      <Card variant="outlined" sx={{ borderRadius: 2 }}>
+      <Card
+        variant="outlined"
+        onClick={() => navigate("/invoices")}
+        sx={{
+          borderRadius: 2,
+          cursor: "pointer",
+          transition: "all 0.2s ease",
+          "&:hover": { borderColor: "success.main", boxShadow: 2, transform: "translateY(-2px)" },
+        }}
+      >
         <CardHeader
           avatar={<ReceiptLongOutlinedIcon color="success" />}
           title={<Typography variant="subtitle1" fontWeight="bold">Billing & Invoices</Typography>}
           subheader="Live collection & settlement rate"
+          action={
+            <Tooltip title="View All Invoices">
+              <IconButton size="small" onClick={(e) => { e.stopPropagation(); navigate("/invoices"); }}>
+                <ArrowForwardIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          }
           sx={{ pb: 1 }}
         />
         <Divider />
@@ -84,11 +105,27 @@ export function DashboardOperationsOverview() {
       </Card>
 
       {/* Project Execution */}
-      <Card variant="outlined" sx={{ borderRadius: 2 }}>
+      <Card
+        variant="outlined"
+        onClick={() => navigate("/projects")}
+        sx={{
+          borderRadius: 2,
+          cursor: "pointer",
+          transition: "all 0.2s ease",
+          "&:hover": { borderColor: "info.main", boxShadow: 2, transform: "translateY(-2px)" },
+        }}
+      >
         <CardHeader
           avatar={<AssignmentTurnedInOutlinedIcon color="info" />}
           title={<Typography variant="subtitle1" fontWeight="bold">Project Milestones</Typography>}
           subheader="Work delivery & phase execution"
+          action={
+            <Tooltip title="View All Projects">
+              <IconButton size="small" onClick={(e) => { e.stopPropagation(); navigate("/projects"); }}>
+                <ArrowForwardIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          }
           sx={{ pb: 1 }}
         />
         <Divider />
@@ -122,11 +159,27 @@ export function DashboardOperationsOverview() {
       </Card>
 
       {/* Support & SLA */}
-      <Card variant="outlined" sx={{ borderRadius: 2 }}>
+      <Card
+        variant="outlined"
+        onClick={() => navigate("/tickets")}
+        sx={{
+          borderRadius: 2,
+          cursor: "pointer",
+          transition: "all 0.2s ease",
+          "&:hover": { borderColor: "warning.main", boxShadow: 2, transform: "translateY(-2px)" },
+        }}
+      >
         <CardHeader
           avatar={<SupportAgentOutlinedIcon color="warning" />}
           title={<Typography variant="subtitle1" fontWeight="bold">Support & Tickets</Typography>}
           subheader="Customer issues and SLA tracking"
+          action={
+            <Tooltip title="View All Tickets">
+              <IconButton size="small" onClick={(e) => { e.stopPropagation(); navigate("/tickets"); }}>
+                <ArrowForwardIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          }
           sx={{ pb: 1 }}
         />
         <Divider />
