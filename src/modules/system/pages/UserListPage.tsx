@@ -28,6 +28,7 @@ import {
   Avatar,
   InputAdornment,
   FormControlLabel,
+  Alert,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteIcon from "@mui/icons-material/Delete";
@@ -71,6 +72,7 @@ export default function UserListPage() {
   // Edit User Modal state
   const [editingUser, setEditingUser] = useState<UserItem | null>(null);
   const [editPayload, setEditPayload] = useState<UpdateUserPayload>({});
+  const [editError, setEditError] = useState<string | null>(null);
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -120,12 +122,15 @@ export default function UserListPage() {
   const handleUpdateUser = async () => {
     if (!editingUser) return;
     setSubmitting(true);
+    setEditError(null);
     try {
       await userApi.updateUser(editingUser.id, editPayload);
       setEditingUser(null);
       fetchUsers();
     } catch (err: any) {
-      alert(err.response?.data?.message || err.message || "Failed to update user account");
+      const msg = err.response?.data?.message || err.message || "Failed to update user account";
+      setEditError(msg);
+      alert(msg);
     } finally {
       setSubmitting(false);
     }
@@ -143,6 +148,9 @@ export default function UserListPage() {
 
   const handleOpenEdit = (user: UserItem) => {
     setEditingUser(user);
+    setEditError(null);
+    const rawRole = user.roles?.[0] || "EMPLOYEE";
+    const cleanRole = rawRole.startsWith("ROLE_") ? rawRole.substring(5) : rawRole;
     setEditPayload({
       firstName: user.firstName,
       lastName: user.lastName,
@@ -150,7 +158,7 @@ export default function UserListPage() {
       jobTitle: user.jobTitle,
       department: user.department,
       bio: user.bio,
-      role: user.roles?.[0] || "EMPLOYEE",
+      role: cleanRole,
       enabled: user.enabled,
       emailVerified: user.emailVerified,
     });
@@ -428,6 +436,11 @@ export default function UserListPage() {
       <Dialog open={Boolean(editingUser)} onClose={() => !submitting && setEditingUser(null)} maxWidth="sm" fullWidth>
         <DialogTitle sx={{ fontWeight: "bold" }}>Edit User Account & Role</DialogTitle>
         <DialogContent dividers>
+          {editError && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {editError}
+            </Alert>
+          )}
           <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 2, pt: 1 }}>
             <TextField
               label="First Name"
