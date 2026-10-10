@@ -106,11 +106,24 @@ export function CustomerCreateDrawer({ open, onClose }: CustomerCreateDrawerProp
             </Box>
           </Box>
 
-          <Box>
-            <Typography variant="caption" fontWeight={600} color={tokens.colors.secondary[700]} sx={{ mb: 0.5, display: "block" }}>
-              Billing Address
-            </Typography>
-            <AppTextField placeholder="Street address, Suite / Floor" {...register("address")} />
+          <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)" }, gap: 2 }}>
+            <Box>
+              <Typography variant="caption" fontWeight={600} color={tokens.colors.secondary[700]} sx={{ mb: 0.5, display: "block" }}>
+                Billing Address
+              </Typography>
+              <AppTextField placeholder="Street address, Suite / Floor" {...register("address")} />
+            </Box>
+            <Box>
+              <Typography variant="caption" fontWeight={600} color={tokens.colors.secondary[700]} sx={{ mb: 0.5, display: "block" }}>
+                Client Portal Password (Optional)
+              </Typography>
+              <AppTextField
+                type="text"
+                placeholder="Leave blank to auto-generate password"
+                helperText="Custom password for client login; auto-generated if left empty."
+                {...register("password")}
+              />
+            </Box>
           </Box>
 
           <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(3, 1fr)" }, gap: 1.5 }}>

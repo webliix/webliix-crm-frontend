@@ -1,8 +1,14 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import Divider from "@mui/material/Divider";
 import Alert from "@mui/material/Alert";
+import Dialog from "@mui/material/Dialog";
+import DialogTitle from "@mui/material/DialogTitle";
+import DialogContent from "@mui/material/DialogContent";
+import DialogActions from "@mui/material/DialogActions";
+import TextField from "@mui/material/TextField";
 import WhatsAppIcon from "@mui/icons-material/WhatsApp";
 import EmailOutlinedIcon from "@mui/icons-material/EmailOutlined";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
@@ -25,17 +31,31 @@ interface Props {
 export function LeadDetailsDrawer({ id, open, onClose }: Props) {
   const navigate = useNavigate();
   const convertMutation = useConvertLead();
+  const [convertModalOpen, setConvertModalOpen] = useState(false);
+  const [clientPassword, setClientPassword] = useState("");
   const { data, isLoading, isError } = useLead(id ?? 0);
   const lead: (LeadResponse & { converted?: boolean; convertedAt?: string }) | undefined =
     (data as any)?.data ?? ((data as any)?.id ? (data as any) : undefined);
 
   const isConverted = Boolean(lead?.converted);
 
-  const handleConvert = () => {
+  const handleConvertClick = () => {
     if (!lead?.id) return;
-    if (window.confirm(`Convert lead "${lead.contactPerson || lead.companyName || `#${lead.id}`}" into an active client?`)) {
-      convertMutation.mutate(lead.id);
-    }
+    setClientPassword("");
+    setConvertModalOpen(true);
+  };
+
+  const handleConfirmConvert = () => {
+    if (!lead?.id) return;
+    convertMutation.mutate(
+      { id: lead.id, password: clientPassword.trim() || undefined },
+      {
+        onSuccess: () => {
+          setConvertModalOpen(false);
+          setClientPassword("");
+        },
+      }
+    );
   };
 
   const handleOpenWhatsApp = () => {
@@ -159,12 +179,56 @@ export function LeadDetailsDrawer({ id, open, onClose }: Props) {
               appVariant="primary"
               fullWidth
               startIcon={<PersonAddOutlinedIcon sx={{ fontSize: 18 }} />}
-              onClick={handleConvert}
+              onClick={handleConvertClick}
               loading={convertMutation.isPending}
             >
               Convert Lead to Active Client Account
             </AppButton>
           )}
+
+          {/* Convert Lead to Client Account Modal */}
+          <Dialog
+            open={convertModalOpen}
+            onClose={() => !convertMutation.isPending && setConvertModalOpen(false)}
+            maxWidth="xs"
+            fullWidth
+          >
+            <DialogTitle sx={{ pb: 1, fontWeight: 700 }}>
+              Convert Lead to Client Account
+            </DialogTitle>
+            <DialogContent dividers>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                Converting <b>{lead.contactPerson || lead.companyName || `#${lead.id}`}</b> into an active customer account will grant them Client Portal access.
+              </Typography>
+              <TextField
+                fullWidth
+                label="Client Portal Password (Optional)"
+                placeholder="Leave blank to auto-generate password"
+                helperText="If blank, a secure random password will be created and emailed to them."
+                value={clientPassword}
+                onChange={(e) => setClientPassword(e.target.value)}
+                disabled={convertMutation.isPending}
+                size="small"
+              />
+            </DialogContent>
+            <DialogActions sx={{ px: 3, py: 2 }}>
+              <AppButton
+                appVariant="ghost"
+                onClick={() => setConvertModalOpen(false)}
+                disabled={convertMutation.isPending}
+              >
+                Cancel
+              </AppButton>
+              <AppButton
+                appVariant="primary"
+                onClick={handleConfirmConvert}
+                loading={convertMutation.isPending}
+                loadingText="Converting..."
+              >
+                Confirm & Convert
+              </AppButton>
+            </DialogActions>
+          </Dialog>
 
           {/* Contact Details */}
           <Box>

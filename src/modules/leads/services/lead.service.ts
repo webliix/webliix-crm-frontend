@@ -32,8 +32,8 @@ export const leadService = {
     return res.data;
   },
 
-  async convert(id: number): Promise<ApiResponseVoid> {
-    const res = await http.post(`/api/v1/leads/${id}/convert`);
+  async convert(id: number, password?: string): Promise<ApiResponseVoid> {
+    const res = await http.post(`/api/v1/leads/${id}/convert`, password ? { password } : {});
     return res.data;
   },
 };

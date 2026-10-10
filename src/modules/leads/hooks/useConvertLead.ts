@@ -7,7 +7,12 @@ export function useConvertLead() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (id: number) => leadService.convert(id),
+    mutationFn: (variables: { id: number; password?: string } | number) => {
+      if (typeof variables === "number") {
+        return leadService.convert(variables);
+      }
+      return leadService.convert(variables.id, variables.password);
+    },
     onSuccess: () => {
       notificationService.success("Lead successfully converted into an active customer account");
       queryClient.invalidateQueries({ queryKey: leadQueryKeys.all });

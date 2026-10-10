@@ -39,6 +39,7 @@ export interface CreateCustomerRequest {
   lifetimeValue?: number;
   customerSince?: string;
   active?: boolean;
+  password?: string;
 }
 
 export interface CustomerContact {
