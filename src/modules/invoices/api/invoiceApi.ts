@@ -3,10 +3,16 @@ import { http } from "@/shared/services/http";
 export interface InvoiceItem {
   id: number;
   invoiceNumber: string;
+  customerId?: number;
+  customerName?: string;
+  customerCompanyName?: string;
+  projectId?: number;
+  projectName?: string;
+  projectCode?: string;
   totalAmount: number;
   paidAmount: number;
   pendingAmount: number;
-  status: "PAID" | "PENDING" | "OVERDUE" | "DRAFT" | "CANCELLED" | string;
+  status: "PAID" | "PENDING" | "OVERDUE" | "DRAFT" | "CANCELLED" | "PARTIALLY_PAID" | "SENT" | string;
   issueDate?: string;
   dueDate?: string;
   notes?: string;
@@ -14,7 +20,7 @@ export interface InvoiceItem {
     id: number;
     companyName: string;
     contactPerson: string;
-    email: string;
+    email?: string;
   };
   project?: {
     id: number;
@@ -77,19 +83,87 @@ export interface ProjectBillingSummary {
   paymentSubmissions: any[];
 }
 
+function normalizeInvoice(raw: any): InvoiceItem {
+  const total = Number(raw.totalAmount) || 0;
+  const paid = Number(raw.paidAmount) || 0;
+  const pending = raw.pendingAmount !== undefined && raw.pendingAmount !== null
+    ? Number(raw.pendingAmount)
+    : Math.max(0, total - paid);
+
+  const customerCompanyName = raw.customerCompanyName || raw.customer?.companyName || "";
+  const customerName = raw.customerName || raw.customer?.contactPerson || raw.customer?.name || "";
+  const customerId = raw.customerId || raw.customer?.id;
+
+  const projectName = raw.projectName || raw.project?.projectName || raw.project?.name || "";
+  const projectCode = raw.projectCode || raw.project?.projectCode || "";
+  const projectId = raw.projectId || raw.project?.id;
+
+  return {
+    ...raw,
+    totalAmount: total,
+    paidAmount: paid,
+    pendingAmount: pending,
+    customerId,
+    customerName,
+    customerCompanyName,
+    projectId,
+    projectName,
+    projectCode,
+    customer: raw.customer || (customerId ? {
+      id: customerId,
+      companyName: customerCompanyName || customerName || "Direct Client",
+      contactPerson: customerName || customerCompanyName || "Authorized Contact",
+      email: raw.customerEmail || raw.customer?.email || "",
+    } : undefined),
+    project: raw.project || (projectId ? {
+      id: projectId,
+      projectName: projectName || "General Service",
+      projectCode: projectCode || "",
+    } : undefined),
+  };
+}
+
 export const invoiceApi = {
-  async getInvoices(page = 0, size = 20, projectId?: number, customerId?: number): Promise<{ content: InvoiceItem[]; totalElements: number }> {
+  async getInvoices(
+    page = 0,
+    size = 20,
+    projectId?: number,
+    customerId?: number
+  ): Promise<{ content: InvoiceItem[]; totalElements: number }> {
     try {
-      const res = await http.get(`/api/v1/invoices`, { params: { page, size, projectId, customerId } });
-      const data = res.data?.data;
-      if (Array.isArray(data)) {
-        return { content: data, totalElements: data.length };
+      const params: Record<string, any> = { page, size };
+      if (projectId !== undefined && projectId !== null && projectId !== (("" as unknown) as number)) {
+        params.projectId = projectId;
       }
+      if (customerId !== undefined && customerId !== null && customerId !== (("" as unknown) as number)) {
+        params.customerId = customerId;
+      }
+
+      const res = await http.get(`/api/v1/invoices`, { params });
+      const raw = res.data;
+      let list: any[] = [];
+      let total = 0;
+
+      if (Array.isArray(raw)) {
+        list = raw;
+        total = raw.length;
+      } else if (Array.isArray(raw?.data)) {
+        list = raw.data;
+        total = raw.data.length;
+      } else if (Array.isArray(raw?.data?.content)) {
+        list = raw.data.content;
+        total = raw.data.totalElements ?? list.length;
+      } else if (Array.isArray(raw?.content)) {
+        list = raw.content;
+        total = raw.totalElements ?? list.length;
+      }
+
       return {
-        content: data?.content ?? [],
-        totalElements: data?.totalElements ?? 0,
+        content: list.map(normalizeInvoice),
+        totalElements: total,
       };
-    } catch {
+    } catch (err) {
+      console.warn("Failed to fetch invoices:", err);
       return { content: [], totalElements: 0 };
     }
   },
@@ -97,7 +171,8 @@ export const invoiceApi = {
   async getInvoice(id: number | string): Promise<InvoiceItem | null> {
     try {
       const res = await http.get(`/api/v1/invoices/${id}`);
-      return res.data?.data ?? null;
+      const raw = res.data?.data ?? res.data;
+      return raw ? normalizeInvoice(raw) : null;
     } catch {
       return null;
     }
@@ -105,29 +180,74 @@ export const invoiceApi = {
 
   async createInvoice(payload: CreateInvoicePayload): Promise<InvoiceItem | null> {
     const res = await http.post(`/api/v1/invoices`, payload);
-    return res.data?.data ?? null;
+    const raw = res.data?.data ?? res.data;
+    return raw ? normalizeInvoice(raw) : null;
   },
 
   async recordPayment(invoiceId: number | string, payload: RecordPaymentPayload): Promise<any> {
     const res = await http.post(`/api/v1/invoices/${invoiceId}/payments`, payload);
-    return res.data?.data ?? null;
+    return res.data?.data ?? res.data ?? null;
   },
 
   async getProjectBilling(projectId: number | string): Promise<ProjectBillingSummary | null> {
     try {
       const res = await http.get(`/api/v1/projects/${projectId}/billing`);
-      return res.data?.data ?? null;
-    } catch {
-      return null;
+      const raw = res.data?.data ?? res.data;
+      if (raw) {
+        const rawInvoices = Array.isArray(raw.invoices) ? raw.invoices : [];
+        return {
+          ...raw,
+          invoices: rawInvoices.map(normalizeInvoice),
+          budget: Number(raw.budget) || 0,
+          totalBilled: Number(raw.totalBilled) || 0,
+          totalPaid: Number(raw.totalPaid) || 0,
+          pendingDueOnInvoices: Number(raw.pendingDueOnInvoices) || 0,
+          remainingProjectBalance: Number(raw.remainingProjectBalance) || 0,
+          unbilledContractAmount: Number(raw.unbilledContractAmount) || 0,
+          paymentSubmissions: Array.isArray(raw.paymentSubmissions) ? raw.paymentSubmissions : [],
+        };
+      }
+    } catch (err) {
+      console.warn("getProjectBilling failed, falling back to getProjectInvoices:", err);
     }
+
+    // Resilient Fallback: fetch project invoices directly
+    try {
+      const invList = await invoiceApi.getProjectInvoices(projectId);
+      if (invList && invList.length > 0) {
+        const totalBilled = invList.reduce((sum, i) => sum + (i.totalAmount || 0), 0);
+        const totalPaid = invList.reduce((sum, i) => sum + (i.paidAmount || 0), 0);
+        const pendingDue = invList.reduce((sum, i) => sum + (i.pendingAmount || 0), 0);
+        return {
+          projectId: Number(projectId),
+          projectCode: invList[0]?.projectCode || "",
+          projectName: invList[0]?.projectName || "",
+          customerId: invList[0]?.customerId || 0,
+          customerName: invList[0]?.customerName || "",
+          customerCompanyName: invList[0]?.customerCompanyName || "",
+          budget: 0,
+          totalBilled,
+          totalPaid,
+          pendingDueOnInvoices: pendingDue,
+          remainingProjectBalance: pendingDue,
+          unbilledContractAmount: 0,
+          invoices: invList,
+          paymentSubmissions: [],
+        };
+      }
+    } catch {
+      // ignore
+    }
+
+    return null;
   },
 
   async getProjectInvoices(projectId: number | string): Promise<InvoiceItem[]> {
     try {
       const res = await http.get(`/api/v1/projects/${projectId}/invoices`);
-      const data = res.data?.data;
-      if (Array.isArray(data)) return data;
-      return data?.content ?? [];
+      const raw = res.data?.data ?? res.data;
+      const list = Array.isArray(raw) ? raw : (raw?.content || []);
+      return list.map(normalizeInvoice);
     } catch {
       return [];
     }
@@ -138,7 +258,8 @@ export const invoiceApi = {
     payload: Partial<CreateInvoicePayload> & { status?: string; paidAmount?: number }
   ): Promise<InvoiceItem | null> {
     const res = await http.put(`/api/v1/invoices/${id}`, payload);
-    return res.data?.data ?? null;
+    const raw = res.data?.data ?? res.data;
+    return raw ? normalizeInvoice(raw) : null;
   },
 
   async deleteInvoice(id: number | string): Promise<boolean> {
@@ -150,4 +271,3 @@ export const invoiceApi = {
     }
   },
 };
-

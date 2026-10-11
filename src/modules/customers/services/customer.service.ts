@@ -11,8 +11,18 @@ import type {
 
 export const customerService = {
   async getAllCustomers(): Promise<CustomerResponse[]> {
-    const res = await http.get("/api/v1/customers", { params: { size: 100 } });
-    return res.data?.data?.content ?? res.data?.data ?? [];
+    try {
+      const res = await http.get("/api/v1/customers", { params: { size: 100 } });
+      const raw = res.data;
+      if (Array.isArray(raw)) return raw;
+      if (Array.isArray(raw?.data)) return raw.data;
+      if (Array.isArray(raw?.data?.content)) return raw.data.content;
+      if (Array.isArray(raw?.content)) return raw.content;
+      return [];
+    } catch (err) {
+      console.warn("Failed to fetch all customers:", err);
+      return [];
+    }
   },
 
   async getCustomer(id: number): Promise<CustomerResponse> {

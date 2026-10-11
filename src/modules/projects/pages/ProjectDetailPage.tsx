@@ -375,21 +375,70 @@ export default function ProjectDetailPage() {
     }
   };
 
-  const loadData = () => {
+  const loadData = async () => {
     if (!id) return;
     setLoading(true);
 
-    Promise.all([
-      projectApi.getProject(id),
-      projectApi.getMilestones(id),
-      projectApi.getTasks(id),
-      projectApi.getComments(id),
-      ticketService.getTicketsByProject(Number(id)),
-      documentService.getDocuments({ module: "PROJECT", referenceId: Number(id) }),
-      invoiceApi.getProjectBilling(id),
-      projectApi.getProjectMembers(id),
-      projectApi.getProjectWorkLogs(id),
-    ]).then(([projData, msData, taskData, commentData, ticketData, docData, billingData, memberData, workLogsData]) => {
+    try {
+      const [
+        projRes,
+        msRes,
+        taskRes,
+        commentRes,
+        ticketRes,
+        docRes,
+        billingRes,
+        memberRes,
+        workLogsRes,
+      ] = await Promise.allSettled([
+        projectApi.getProject(id),
+        projectApi.getMilestones(id).catch(() => []),
+        projectApi.getTasks(id).catch(() => []),
+        projectApi.getComments(id).catch(() => []),
+        ticketService.getTicketsByProject ? ticketService.getTicketsByProject(Number(id)).catch(() => []) : Promise.resolve([]),
+        documentService.getDocuments ? documentService.getDocuments({ module: "PROJECT", referenceId: Number(id) }).catch(() => []) : Promise.resolve([]),
+        invoiceApi.getProjectBilling(id),
+        projectApi.getProjectMembers(id).catch(() => []),
+        projectApi.getProjectWorkLogs(id).catch(() => []),
+      ]);
+
+      const projData = projRes.status === "fulfilled" ? projRes.value : null;
+      const msData = msRes.status === "fulfilled" && Array.isArray(msRes.value) ? msRes.value : [];
+      const taskData = taskRes.status === "fulfilled" && Array.isArray(taskRes.value) ? taskRes.value : [];
+      const commentData = commentRes.status === "fulfilled" && Array.isArray(commentRes.value) ? commentRes.value : [];
+      const ticketData = ticketRes.status === "fulfilled" && Array.isArray(ticketRes.value) ? ticketRes.value : [];
+      const docData = docRes.status === "fulfilled" && Array.isArray(docRes.value) ? docRes.value : [];
+      let billingData = billingRes.status === "fulfilled" ? billingRes.value : null;
+      const memberData = memberRes.status === "fulfilled" && Array.isArray(memberRes.value) ? memberRes.value : [];
+      const workLogsData = workLogsRes.status === "fulfilled" && Array.isArray(workLogsRes.value) ? workLogsRes.value : [];
+
+      if (!billingData || !billingData.invoices || billingData.invoices.length === 0) {
+        try {
+          const directInvoices = await invoiceApi.getProjectInvoices(id);
+          if (directInvoices && directInvoices.length > 0) {
+            billingData = {
+              ...(billingData || {}),
+              projectId: Number(id),
+              projectCode: projData?.projectCode || "",
+              projectName: projData?.projectName || "",
+              customerId: projData?.customerId || 0,
+              customerName: projData?.customerName || "",
+              customerCompanyName: projData?.customerCompanyName || "",
+              budget: projData?.budget || 0,
+              totalBilled: directInvoices.reduce((sum, i) => sum + (i.totalAmount || 0), 0),
+              totalPaid: directInvoices.reduce((sum, i) => sum + (i.paidAmount || 0), 0),
+              pendingDueOnInvoices: directInvoices.reduce((sum, i) => sum + (i.pendingAmount || 0), 0),
+              remainingProjectBalance: directInvoices.reduce((sum, i) => sum + (i.pendingAmount || 0), 0),
+              unbilledContractAmount: 0,
+              invoices: directInvoices,
+              paymentSubmissions: billingData?.paymentSubmissions || [],
+            };
+          }
+        } catch {
+          // ignore
+        }
+      }
+
       setProject(projData);
       if (projData) {
         setProgressVal(projData.progressPercentage || 0);
@@ -405,8 +454,11 @@ export default function ProjectDetailPage() {
       setProjectBilling(billingData);
       setMembers(memberData || []);
       setProjectWorkLogs(workLogsData || []);
+    } catch (err) {
+      console.error("Failed to load project details:", err);
+    } finally {
       setLoading(false);
-    });
+    }
   };
 
   useEffect(() => {

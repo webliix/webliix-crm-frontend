@@ -26,6 +26,7 @@ import AccountBalanceWalletOutlinedIcon from "@mui/icons-material/AccountBalance
 import CheckCircleOutlinedIcon from "@mui/icons-material/CheckCircleOutlined";
 import HourglassTopOutlinedIcon from "@mui/icons-material/HourglassTopOutlined";
 import AddIcon from "@mui/icons-material/Add";
+import RefreshIcon from "@mui/icons-material/Refresh";
 import PaymentOutlinedIcon from "@mui/icons-material/PaymentOutlined";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import EditNoteOutlinedIcon from "@mui/icons-material/EditNoteOutlined";
@@ -193,18 +194,29 @@ export default function InvoiceListPage() {
     }
   };
 
-  const loadData = () => {
+  const loadData = async () => {
     setLoading(true);
-    Promise.all([
-      invoiceApi.getInvoices(0, 100),
-      customerService.getAllCustomers(),
-      projectApi.getProjects(0, 100),
-    ]).then(([resInv, resCust, resProj]) => {
-      setInvoices(resInv.content);
-      setCustomers(resCust);
-      setProjects(resProj.content);
+    try {
+      const [resInv, resCust, resProj] = await Promise.allSettled([
+        invoiceApi.getInvoices(0, 100),
+        customerService.getAllCustomers().catch(() => []),
+        projectApi.getProjects(0, 100).catch(() => ({ content: [], totalElements: 0 })),
+      ]);
+
+      if (resInv.status === "fulfilled" && resInv.value) {
+        setInvoices(resInv.value.content || []);
+      }
+      if (resCust.status === "fulfilled" && resCust.value) {
+        setCustomers(Array.isArray(resCust.value) ? resCust.value : []);
+      }
+      if (resProj.status === "fulfilled" && resProj.value) {
+        setProjects(resProj.value.content || []);
+      }
+    } catch (err) {
+      console.error("Failed to load invoices data:", err);
+    } finally {
       setLoading(false);
-    });
+    }
   };
 
   useEffect(() => {
@@ -377,14 +389,25 @@ export default function InvoiceListPage() {
             Manage customer invoicing, project milestone billings, and payment settlements.
           </Typography>
         </Box>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => setCreateDialogOpen(true)}
-          sx={{ fontWeight: "bold", px: 2.5, py: 1 }}
-        >
-          Create New Invoice
-        </Button>
+        <Box sx={{ display: "flex", gap: 1.5, alignItems: "center" }}>
+          <Button
+            variant="outlined"
+            startIcon={<RefreshIcon />}
+            onClick={loadData}
+            disabled={loading}
+            sx={{ fontWeight: "bold", px: 2, py: 1 }}
+          >
+            Refresh
+          </Button>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => setCreateDialogOpen(true)}
+            sx={{ fontWeight: "bold", px: 2.5, py: 1 }}
+          >
+            Create New Invoice
+          </Button>
+        </Box>
       </Box>
 
       {/* Summary KPI Cards */}
@@ -449,9 +472,28 @@ export default function InvoiceListPage() {
           <Typography variant="h6" fontWeight={700} color={tokens.colors.secondary[800]} gutterBottom>
             No Invoices Found
           </Typography>
-          <Typography variant="body2" color="text.secondary">
-            You do not have any invoices generated yet. Click &quot;Create New Invoice&quot; to issue your first invoice.
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+            You do not have any invoices generated yet, or they may be loading from the server.
           </Typography>
+          <Box sx={{ display: "flex", gap: 2, justifyContent: "center" }}>
+            <Button
+              variant="outlined"
+              startIcon={<RefreshIcon />}
+              onClick={loadData}
+              disabled={loading}
+              sx={{ fontWeight: "bold" }}
+            >
+              Refresh Invoices
+            </Button>
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={() => setCreateDialogOpen(true)}
+              sx={{ fontWeight: "bold" }}
+            >
+              Create New Invoice
+            </Button>
+          </Box>
         </Card>
       ) : (
         <Card sx={{ borderRadius: tokens.borderRadius.lg, border: `1px solid ${tokens.colors.secondary[200]}`, overflow: "hidden" }}>
@@ -478,10 +520,16 @@ export default function InvoiceListPage() {
                       {invoice.invoiceNumber}
                     </TableCell>
                     <TableCell sx={{ fontWeight: 600 }}>
-                      {invoice.customer?.companyName || invoice.customer?.contactPerson || "Direct Client"}
+                      {invoice.customerCompanyName ||
+                        invoice.customerName ||
+                        invoice.customer?.companyName ||
+                        invoice.customer?.contactPerson ||
+                        "Direct Client"}
                     </TableCell>
                     <TableCell sx={{ fontWeight: 500, color: "text.secondary" }}>
-                      {invoice.project?.projectName || "General Service"}
+                      {invoice.projectName ||
+                        invoice.project?.projectName ||
+                        "General Service"}
                     </TableCell>
                     <TableCell color="text.secondary">
                       {invoice.issueDate ? new Date(invoice.issueDate).toLocaleDateString() : "—"}
@@ -1067,17 +1115,17 @@ export default function InvoiceListPage() {
                   <Typography variant="subtitle2" fontWeight={900} color="#0f172a" sx={{ borderBottom: "1px solid #cbd5e1", pb: 0.5, mb: 1 }}>
                     Bill to:
                   </Typography>
-                  <Typography variant="body2"><strong>Client:</strong> {previewInvoice.customer?.companyName || previewInvoice.customer?.contactPerson || "Webliix Client"}</Typography>
-                  <Typography variant="body2"><strong>Contact Person:</strong> {previewInvoice.customer?.contactPerson || previewInvoice.customer?.companyName || "Authorized Signatory"}</Typography>
-                  <Typography variant="body2"><strong>Client ID#:</strong> #{previewInvoice.customer?.id || previewInvoice.id}</Typography>
-                  <Typography variant="body2"><strong>Project:</strong> {previewInvoice.project?.projectName || "Engineering Services"}</Typography>
+                  <Typography variant="body2"><strong>Client:</strong> {previewInvoice.customerCompanyName || previewInvoice.customerName || previewInvoice.customer?.companyName || previewInvoice.customer?.contactPerson || "Webliix Client"}</Typography>
+                  <Typography variant="body2"><strong>Contact Person:</strong> {previewInvoice.customerName || previewInvoice.customer?.contactPerson || previewInvoice.customerCompanyName || previewInvoice.customer?.companyName || "Authorized Signatory"}</Typography>
+                  <Typography variant="body2"><strong>Client ID#:</strong> #{previewInvoice.customerId || previewInvoice.customer?.id || previewInvoice.id}</Typography>
+                  <Typography variant="body2"><strong>Project:</strong> {previewInvoice.projectName || previewInvoice.project?.projectName || "Engineering Services"}</Typography>
                 </Box>
 
                 <Box>
                   <Typography variant="subtitle2" fontWeight={900} color="#0f172a" sx={{ borderBottom: "1px solid #cbd5e1", pb: 0.5, mb: 1 }}>
                     Ship to:
                   </Typography>
-                  <Typography variant="body2"><strong>Recipient:</strong> {previewInvoice.customer?.companyName || "Webliix Client"}</Typography>
+                  <Typography variant="body2"><strong>Recipient:</strong> {previewInvoice.customerCompanyName || previewInvoice.customerName || previewInvoice.customer?.companyName || "Webliix Client"}</Typography>
                   <Typography variant="body2"><strong>Delivery:</strong> Digital Delivery / Remote Production Deployment</Typography>
                   <Typography variant="body2"><strong>Status:</strong> {previewInvoice.status || "DRAFT"}</Typography>
                   <Typography variant="body2"><strong>Platform:</strong> webliix.com</Typography>
@@ -1140,7 +1188,7 @@ export default function InvoiceListPage() {
                         <TableCell sx={{ fontWeight: 600 }}>01</TableCell>
                         <TableCell>
                           <Typography variant="body2" fontWeight={700}>
-                            {previewInvoice.project?.projectName || "Software Engineering & Architecture Deliverables"}
+                            {previewInvoice.projectName || previewInvoice.project?.projectName || "Software Engineering & Architecture Deliverables"}
                           </Typography>
                           <Typography variant="caption" color="text.secondary">
                             Delivery milestones, cloud deployment & engineering sprint
