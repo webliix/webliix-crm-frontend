@@ -52,8 +52,14 @@ export default function ProjectListPage() {
   // Create Project Dialog State
   const [createDialogOpen, setCreateDialogOpen] = useState<boolean>(false);
   const [customers, setCustomers] = useState<CustomerOption[]>([]);
+  const [allEmployees, setAllEmployees] = useState<any[]>([]);
   const [creating, setCreating] = useState<boolean>(false);
   const [createError, setCreateError] = useState<string | null>(null);
+
+  // Manual Milestone & Task Initiation State
+  const [manualMilestones, setManualMilestones] = useState<{ title: string; description: string; dueDate?: string }[]>([]);
+  const [manualTasks, setManualTasks] = useState<{ title: string; description: string; assignedTo?: string; status?: string }[]>([]);
+  const [selectedMemberEmployeeIds, setSelectedMemberEmployeeIds] = useState<number[]>([]);
 
   // Edit Project Dialog State
   const [editDialogOpen, setEditDialogOpen] = useState<boolean>(false);
@@ -151,6 +157,8 @@ export default function ProjectListPage() {
     description: "",
     customerId: undefined,
     budget: 50000,
+    currency: "USD",
+    billingType: "FIXED_PRICE",
     startDate: new Date().toISOString().split("T")[0],
     expectedEndDate: new Date(Date.now() + 45 * 86400000).toISOString().split("T")[0],
     priority: "HIGH",
@@ -180,7 +188,54 @@ export default function ProjectListPage() {
         setCustomers(list);
       })
       .catch(() => setCustomers([]));
+
+    // Fetch Employees for assignment
+    http.get("/api/v1/employees", { params: { page: 0, size: 100 } })
+      .then((res) => {
+        const data = res.data?.data;
+        const list = Array.isArray(data) ? data : data?.content || [];
+        setAllEmployees(list);
+      })
+      .catch(() => setAllEmployees([]));
   }, []);
+
+  const handleAddManualMilestone = () => {
+    setManualMilestones((prev) => [
+      ...prev,
+      { title: `Milestone Phase ${prev.length + 1}`, description: "", dueDate: "" },
+    ]);
+  };
+
+  const handleUpdateManualMilestone = (index: number, field: string, val: string) => {
+    setManualMilestones((prev) => {
+      const next = [...prev];
+      next[index] = { ...next[index], [field]: val };
+      return next;
+    });
+  };
+
+  const handleRemoveManualMilestone = (index: number) => {
+    setManualMilestones((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleAddManualTask = () => {
+    setManualTasks((prev) => [
+      ...prev,
+      { title: "", description: "", assignedTo: "", status: "TODO" },
+    ]);
+  };
+
+  const handleUpdateManualTask = (index: number, field: string, val: string) => {
+    setManualTasks((prev) => {
+      const next = [...prev];
+      next[index] = { ...next[index], [field]: val };
+      return next;
+    });
+  };
+
+  const handleRemoveManualTask = (index: number) => {
+    setManualTasks((prev) => prev.filter((_, i) => i !== index));
+  };
 
   const handleCreateSubmit = async () => {
     if (!formData.projectName.trim()) {
@@ -191,15 +246,33 @@ export default function ProjectListPage() {
     setCreating(true);
     setCreateError(null);
 
-    const created = await projectApi.createProject(formData);
+    const payload: CreateProjectPayload = {
+      ...formData,
+      initialMilestones: !formData.autoGeneratePhases && manualMilestones.length > 0
+        ? manualMilestones.filter((m) => m.title.trim())
+        : undefined,
+      initialTasks: manualTasks.length > 0
+        ? manualTasks.filter((t) => t.title.trim())
+        : undefined,
+      initialMemberEmployeeIds: selectedMemberEmployeeIds.length > 0
+        ? selectedMemberEmployeeIds
+        : undefined,
+    };
+
+    const created = await projectApi.createProject(payload);
     if (created) {
       setCreateDialogOpen(false);
       fetchProjects();
+      setManualMilestones([]);
+      setManualTasks([]);
+      setSelectedMemberEmployeeIds([]);
       setFormData({
         projectName: "",
         description: "",
         customerId: undefined,
         budget: 50000,
+        currency: "USD",
+        billingType: "FIXED_PRICE",
         startDate: new Date().toISOString().split("T")[0],
         expectedEndDate: new Date(Date.now() + 45 * 86400000).toISOString().split("T")[0],
         priority: "HIGH",
@@ -644,13 +717,41 @@ export default function ProjectListPage() {
               ))}
             </TextField>
 
+            <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1 }}>
+              <TextField
+                select
+                fullWidth
+                label="Currency"
+                value={formData.currency || "USD"}
+                onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
+              >
+                <MenuItem value="USD">USD ($)</MenuItem>
+                <MenuItem value="INR">INR (₹)</MenuItem>
+                <MenuItem value="EUR">EUR (€)</MenuItem>
+                <MenuItem value="GBP">GBP (£)</MenuItem>
+              </TextField>
+
+              <TextField
+                fullWidth
+                label={`Budget (${formData.currency || "USD"})`}
+                type="number"
+                value={formData.budget || ""}
+                onChange={(e) => setFormData({ ...formData, budget: Number(e.target.value) })}
+              />
+            </Box>
+
             <TextField
+              select
               fullWidth
-              label="Project Budget (USD $)"
-              type="number"
-              value={formData.budget || ""}
-              onChange={(e) => setFormData({ ...formData, budget: Number(e.target.value) })}
-            />
+              label="Billing Type"
+              value={formData.billingType || "FIXED_PRICE"}
+              onChange={(e) => setFormData({ ...formData, billingType: e.target.value })}
+              helperText="How this project will be billed to the client"
+            >
+              <MenuItem value="FIXED_PRICE">Fixed Price Contract</MenuItem>
+              <MenuItem value="HOURLY">Hourly / Time & Material</MenuItem>
+              <MenuItem value="MILESTONE_BASED">Milestone-Based Billing</MenuItem>
+            </TextField>
 
             <TextField
               select
@@ -694,6 +795,40 @@ export default function ProjectListPage() {
             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
           />
 
+          {/* Initial Team Members Assignment */}
+          <Box sx={{ p: 2, borderRadius: tokens.borderRadius.md, border: "1px solid #e2e8f0", bgcolor: "#f8fafc" }}>
+            <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 1 }}>
+              Assign Initial Team Members ({selectedMemberEmployeeIds.length} selected)
+            </Typography>
+            <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, maxHeight: 130, overflowY: "auto", p: 0.5 }}>
+              {allEmployees.map((emp) => {
+                const isSelected = selectedMemberEmployeeIds.includes(emp.id);
+                return (
+                  <Chip
+                    key={emp.id}
+                    label={`${emp.firstName} ${emp.lastName} (${emp.designationName || "Staff"})`}
+                    color={isSelected ? "primary" : "default"}
+                    variant={isSelected ? "filled" : "outlined"}
+                    clickable
+                    onClick={() => {
+                      if (isSelected) {
+                        setSelectedMemberEmployeeIds((prev) => prev.filter((id) => id !== emp.id));
+                      } else {
+                        setSelectedMemberEmployeeIds((prev) => [...prev, emp.id]);
+                      }
+                    }}
+                    sx={{ fontWeight: 600, fontSize: "0.75rem" }}
+                  />
+                );
+              })}
+              {allEmployees.length === 0 && (
+                <Typography variant="caption" color="text.secondary">
+                  No active employees found in roster.
+                </Typography>
+              )}
+            </Box>
+          </Box>
+
           <TextField
             fullWidth
             label="Documentation & Blueprint URL"
@@ -713,6 +848,7 @@ export default function ProjectListPage() {
             helperText="Technical specifications and stack details included in downloadable project PDF"
           />
 
+          {/* Lifecycle Milestones Selection / Manual Builder */}
           <Box sx={{ p: 2, borderRadius: tokens.borderRadius.md, bgcolor: tokens.colors.primary[50], border: `1px solid ${tokens.colors.primary[100]}` }}>
             <FormControlLabel
               control={
@@ -733,6 +869,96 @@ export default function ProjectListPage() {
                 </Box>
               }
             />
+
+            {!formData.autoGeneratePhases && (
+              <Box sx={{ mt: 2, pt: 2, borderTop: "1px dashed #cbd5e1" }}>
+                <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1.5 }}>
+                  <Typography variant="subtitle2" fontWeight={700}>
+                    Manual Milestones Builder ({manualMilestones.length})
+                  </Typography>
+                  <Button size="small" variant="outlined" startIcon={<AddIcon />} onClick={handleAddManualMilestone}>
+                    Add Phase
+                  </Button>
+                </Box>
+                {manualMilestones.length === 0 ? (
+                  <Typography variant="caption" color="text.secondary">
+                    No custom milestones added. Click "Add Phase" to define project deliverables manually.
+                  </Typography>
+                ) : (
+                  <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+                    {manualMilestones.map((m, idx) => (
+                      <Box key={idx} sx={{ display: "flex", gap: 1, alignItems: "center", bgcolor: "#fff", p: 1, borderRadius: "6px", border: "1px solid #e2e8f0" }}>
+                        <TextField
+                          size="small"
+                          label="Phase Title"
+                          value={m.title}
+                          onChange={(e) => handleUpdateManualMilestone(idx, "title", e.target.value)}
+                          sx={{ flex: 2 }}
+                        />
+                        <TextField
+                          size="small"
+                          label="Target Date"
+                          type="date"
+                          InputLabelProps={{ shrink: true }}
+                          value={m.dueDate || ""}
+                          onChange={(e) => handleUpdateManualMilestone(idx, "dueDate", e.target.value)}
+                          sx={{ flex: 1.5 }}
+                        />
+                        <IconButton size="small" color="error" onClick={() => handleRemoveManualMilestone(idx)}>
+                          <DeleteOutlineIcon fontSize="small" />
+                        </IconButton>
+                      </Box>
+                    ))}
+                  </Box>
+                )}
+              </Box>
+            )}
+          </Box>
+
+          {/* Manual Initial Tasks Builder */}
+          <Box sx={{ p: 2, borderRadius: tokens.borderRadius.md, border: "1px solid #e2e8f0", bgcolor: "#f8fafc" }}>
+            <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1.5 }}>
+              <Box>
+                <Typography variant="subtitle2" fontWeight={700}>
+                  Initial Tasks ({manualTasks.length})
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  Optionally create sprint tasks right away upon project launch
+                </Typography>
+              </Box>
+              <Button size="small" variant="outlined" startIcon={<AddIcon />} onClick={handleAddManualTask}>
+                Add Task
+              </Button>
+            </Box>
+            {manualTasks.length === 0 ? (
+              <Typography variant="caption" color="text.secondary">
+                No initial tasks added. You can also add tasks later in the Project Workspace.
+              </Typography>
+            ) : (
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+                {manualTasks.map((t, idx) => (
+                  <Box key={idx} sx={{ display: "flex", gap: 1, alignItems: "center", bgcolor: "#fff", p: 1, borderRadius: "6px", border: "1px solid #e2e8f0" }}>
+                    <TextField
+                      size="small"
+                      placeholder="Task name..."
+                      value={t.title}
+                      onChange={(e) => handleUpdateManualTask(idx, "title", e.target.value)}
+                      sx={{ flex: 2 }}
+                    />
+                    <TextField
+                      size="small"
+                      placeholder="Assignee name/role"
+                      value={t.assignedTo || ""}
+                      onChange={(e) => handleUpdateManualTask(idx, "assignedTo", e.target.value)}
+                      sx={{ flex: 1.5 }}
+                    />
+                    <IconButton size="small" color="error" onClick={() => handleRemoveManualTask(idx)}>
+                      <DeleteOutlineIcon fontSize="small" />
+                    </IconButton>
+                  </Box>
+                ))}
+              </Box>
+            )}
           </Box>
 
           <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>

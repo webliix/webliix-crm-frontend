@@ -34,6 +34,8 @@ export interface CreateProjectPayload {
   projectName: string;
   description?: string;
   budget?: number;
+  currency?: string;
+  billingType?: string;
   startDate?: string;
   expectedEndDate?: string;
   actualEndDate?: string;
@@ -44,6 +46,9 @@ export interface CreateProjectPayload {
   documentationUrl?: string;
   architectureNotes?: string;
   autoGeneratePhases?: boolean;
+  initialMilestones?: { title: string; description?: string; dueDate?: string }[];
+  initialTasks?: { title: string; description?: string; status?: string; dueDate?: string }[];
+  initialMemberEmployeeIds?: number[];
 }
 
 export interface ProjectMilestoneItem {
@@ -190,6 +195,15 @@ export const projectApi = {
     }
   },
 
+  async deleteMilestone(projectId: number | string, milestoneId: number | string): Promise<boolean> {
+    try {
+      await http.delete(`/api/v1/projects/${projectId}/milestones/${milestoneId}`);
+      return true;
+    } catch {
+      return false;
+    }
+  },
+
   async getTasks(projectId: number | string): Promise<ProjectTaskItem[]> {
     try {
       const res = await http.get(`/api/v1/projects/${projectId}/tasks`);
@@ -221,6 +235,15 @@ export const projectApi = {
       return res.data?.data ?? null;
     } catch {
       return null;
+    }
+  },
+
+  async deleteTask(projectId: number | string, taskId: number | string): Promise<boolean> {
+    try {
+      await http.delete(`/api/v1/projects/${projectId}/tasks/${taskId}`);
+      return true;
+    } catch {
+      return false;
     }
   },
 

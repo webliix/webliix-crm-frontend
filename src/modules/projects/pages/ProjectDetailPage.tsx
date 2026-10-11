@@ -101,17 +101,20 @@ export default function ProjectDetailPage() {
   const [newComment, setNewComment] = useState<string>("");
   const [submittingComment, setSubmittingComment] = useState<boolean>(false);
 
-  // Add Milestone Dialog
+  // Add / Edit Milestone Dialog
   const [milestoneDialogOpen, setMilestoneDialogOpen] = useState<boolean>(false);
+  const [editingMilestoneId, setEditingMilestoneId] = useState<number | null>(null);
   const [newMilestoneTitle, setNewMilestoneTitle] = useState<string>("");
   const [newMilestoneDesc, setNewMilestoneDesc] = useState<string>("");
   const [newMilestoneDate, setNewMilestoneDate] = useState<string>("");
 
-  // Add Task Dialog
+  // Add / Edit Task Dialog
   const [taskDialogOpen, setTaskDialogOpen] = useState<boolean>(false);
+  const [editingTaskId, setEditingTaskId] = useState<number | null>(null);
   const [newTaskTitle, setNewTaskTitle] = useState<string>("");
   const [newTaskDesc, setNewTaskDesc] = useState<string>("");
   const [newTaskAssignee, setNewTaskAssignee] = useState<string>("");
+  const [newTaskStatus, setNewTaskStatus] = useState<string>("TODO");
 
   // Edit Documentation Dialog
   const [docDialogOpen, setDocDialogOpen] = useState<boolean>(false);
@@ -448,36 +451,120 @@ export default function ProjectDetailPage() {
     );
   };
 
-  const handleAddMilestone = async () => {
+  const handleOpenAddMilestone = () => {
+    setEditingMilestoneId(null);
+    setNewMilestoneTitle("");
+    setNewMilestoneDesc("");
+    setNewMilestoneDate("");
+    setMilestoneDialogOpen(true);
+  };
+
+  const handleOpenEditMilestone = (m: ProjectMilestoneItem) => {
+    setEditingMilestoneId(m.id);
+    setNewMilestoneTitle(m.title || m.milestoneName || "");
+    setNewMilestoneDesc(m.description || "");
+    setNewMilestoneDate(m.dueDate ? m.dueDate.split("T")[0] : "");
+    setMilestoneDialogOpen(true);
+  };
+
+  const handleSaveMilestone = async () => {
     if (!id || !newMilestoneTitle.trim()) return;
-    const added = await projectApi.addMilestone(id, {
-      title: newMilestoneTitle.trim(),
-      description: newMilestoneDesc.trim(),
-      dueDate: newMilestoneDate || undefined,
-    });
-    if (added) {
-      setMilestones((prev) => [...prev, added]);
-      setMilestoneDialogOpen(false);
-      setNewMilestoneTitle("");
-      setNewMilestoneDesc("");
-      setNewMilestoneDate("");
+    if (editingMilestoneId) {
+      const updated = await projectApi.updateMilestone(id, editingMilestoneId, {
+        title: newMilestoneTitle.trim(),
+        description: newMilestoneDesc.trim(),
+        dueDate: newMilestoneDate || undefined,
+      });
+      if (updated) {
+        setMilestones((prev) => prev.map((item) => (item.id === editingMilestoneId ? updated : item)));
+        setMilestoneDialogOpen(false);
+      }
+    } else {
+      const added = await projectApi.addMilestone(id, {
+        title: newMilestoneTitle.trim(),
+        description: newMilestoneDesc.trim(),
+        dueDate: newMilestoneDate || undefined,
+      });
+      if (added) {
+        setMilestones((prev) => [...prev, added]);
+        setMilestoneDialogOpen(false);
+        setNewMilestoneTitle("");
+        setNewMilestoneDesc("");
+        setNewMilestoneDate("");
+      }
     }
   };
 
-  const handleAddTask = async () => {
+  const handleDeleteMilestone = async (milestoneId: number) => {
+    if (!id) return;
+    if (window.confirm("Are you sure you want to delete this milestone?")) {
+      const ok = await projectApi.deleteMilestone(id, milestoneId);
+      if (ok) {
+        setMilestones((prev) => prev.filter((item) => item.id !== milestoneId));
+      } else {
+        alert("Failed to delete milestone.");
+      }
+    }
+  };
+
+  const handleOpenAddTask = () => {
+    setEditingTaskId(null);
+    setNewTaskTitle("");
+    setNewTaskDesc("");
+    setNewTaskAssignee("");
+    setNewTaskStatus("TODO");
+    setTaskDialogOpen(true);
+  };
+
+  const handleOpenEditTask = (t: ProjectTaskItem) => {
+    setEditingTaskId(t.id);
+    setNewTaskTitle(t.title || t.taskName || "");
+    setNewTaskDesc(t.description || "");
+    setNewTaskAssignee(t.assignedTo || "");
+    setNewTaskStatus(t.status || "TODO");
+    setTaskDialogOpen(true);
+  };
+
+  const handleSaveTask = async () => {
     if (!id || !newTaskTitle.trim()) return;
-    const added = await projectApi.addTask(id, {
-      title: newTaskTitle.trim(),
-      description: newTaskDesc.trim(),
-      assignedTo: newTaskAssignee.trim() || undefined,
-      status: "TODO",
-    });
-    if (added) {
-      setTasks((prev) => [...prev, added]);
-      setTaskDialogOpen(false);
-      setNewTaskTitle("");
-      setNewTaskDesc("");
-      setNewTaskAssignee("");
+    if (editingTaskId) {
+      const updated = await projectApi.updateTask(id, editingTaskId, {
+        title: newTaskTitle.trim(),
+        description: newTaskDesc.trim(),
+        assignedTo: newTaskAssignee.trim() || undefined,
+        status: newTaskStatus,
+      });
+      if (updated) {
+        setTasks((prev) => prev.map((item) => (item.id === editingTaskId ? updated : item)));
+        setTaskDialogOpen(false);
+      }
+    } else {
+      const added = await projectApi.addTask(id, {
+        title: newTaskTitle.trim(),
+        description: newTaskDesc.trim(),
+        assignedTo: newTaskAssignee.trim() || undefined,
+        status: newTaskStatus,
+      });
+      if (added) {
+        setTasks((prev) => [...prev, added]);
+        setTaskDialogOpen(false);
+        setNewTaskTitle("");
+        setNewTaskDesc("");
+        setNewTaskAssignee("");
+        setNewTaskStatus("TODO");
+      }
+    }
+  };
+
+  const handleDeleteTask = async (taskId: number) => {
+    if (!id) return;
+    if (window.confirm("Are you sure you want to delete this task?")) {
+      const ok = await projectApi.deleteTask(id, taskId);
+      if (ok) {
+        setTasks((prev) => prev.filter((item) => item.id !== taskId));
+      } else {
+        alert("Failed to delete task.");
+      }
     }
   };
 
@@ -1484,7 +1571,7 @@ export default function ProjectDetailPage() {
                   size="small"
                   variant="outlined"
                   startIcon={<AddIcon />}
-                  onClick={() => setMilestoneDialogOpen(true)}
+                  onClick={handleOpenAddMilestone}
                   sx={{ fontWeight: "bold" }}
                 >
                   Add Milestone
@@ -1510,6 +1597,8 @@ export default function ProjectDetailPage() {
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "space-between",
+                        flexWrap: "wrap",
+                        gap: 1,
                       }}
                     >
                       <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
@@ -1534,13 +1623,31 @@ export default function ProjectDetailPage() {
                         </Box>
                       </Box>
 
-                      {m.dueDate && (
-                        <Chip
-                          label={`Target: ${new Date(m.dueDate).toLocaleDateString()}`}
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                        {m.dueDate && (
+                          <Chip
+                            label={`Target: ${new Date(m.dueDate).toLocaleDateString()}`}
+                            size="small"
+                            sx={{ fontWeight: "bold", fontSize: "0.75rem" }}
+                          />
+                        )}
+                        <IconButton
                           size="small"
-                          sx={{ fontWeight: "bold", fontSize: "0.75rem" }}
-                        />
-                      )}
+                          color="primary"
+                          title="Edit Milestone"
+                          onClick={() => handleOpenEditMilestone(m)}
+                        >
+                          <EditNoteOutlinedIcon fontSize="small" />
+                        </IconButton>
+                        <IconButton
+                          size="small"
+                          color="error"
+                          title="Delete Milestone"
+                          onClick={() => handleDeleteMilestone(m.id)}
+                        >
+                          <DeleteOutlineIcon fontSize="small" />
+                        </IconButton>
+                      </Box>
                     </Box>
                   ))}
                 </Box>
@@ -1562,7 +1669,7 @@ export default function ProjectDetailPage() {
                   size="small"
                   variant="outlined"
                   startIcon={<AddIcon />}
-                  onClick={() => setTaskDialogOpen(true)}
+                  onClick={handleOpenAddTask}
                   sx={{ fontWeight: "bold" }}
                 >
                   Add Task
@@ -1588,24 +1695,49 @@ export default function ProjectDetailPage() {
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "space-between",
+                        flexWrap: "wrap",
+                        gap: 1,
                       }}
                     >
                       <Box>
                         <Typography variant="body2" fontWeight="bold">
                           {t.title || t.taskName}
                         </Typography>
+                        {t.description && (
+                          <Typography variant="caption" color="text.secondary" display="block">
+                            {t.description}
+                          </Typography>
+                        )}
                         {t.assignedTo && (
-                          <Typography variant="caption" color="text.secondary">
+                          <Typography variant="caption" color="primary.main" fontWeight={600} display="block">
                             Assigned to: {t.assignedTo}
                           </Typography>
                         )}
                       </Box>
-                      <Chip
-                        label={t.status || "TODO"}
-                        size="small"
-                        color={t.status === "DONE" ? "success" : "default"}
-                        sx={{ fontSize: "0.725rem", fontWeight: "bold" }}
-                      />
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                        <Chip
+                          label={t.status || "TODO"}
+                          size="small"
+                          color={t.status === "DONE" ? "success" : "default"}
+                          sx={{ fontSize: "0.725rem", fontWeight: "bold" }}
+                        />
+                        <IconButton
+                          size="small"
+                          color="primary"
+                          title="Edit Task"
+                          onClick={() => handleOpenEditTask(t)}
+                        >
+                          <EditNoteOutlinedIcon fontSize="small" />
+                        </IconButton>
+                        <IconButton
+                          size="small"
+                          color="error"
+                          title="Delete Task"
+                          onClick={() => handleDeleteTask(t.id)}
+                        >
+                          <DeleteOutlineIcon fontSize="small" />
+                        </IconButton>
+                      </Box>
                     </Box>
                   ))}
                 </Box>
@@ -1887,9 +2019,11 @@ export default function ProjectDetailPage() {
         </Box>
       </Box>
 
-      {/* Add Milestone Dialog */}
+      {/* Add / Edit Milestone Dialog */}
       <Dialog open={milestoneDialogOpen} onClose={() => setMilestoneDialogOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ fontWeight: "bold" }}>Add Project Lifecycle Milestone</DialogTitle>
+        <DialogTitle sx={{ fontWeight: "bold" }}>
+          {editingMilestoneId ? "Edit Project Lifecycle Milestone" : "Add Project Lifecycle Milestone"}
+        </DialogTitle>
         <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, pt: 2 }}>
           <TextField
             required
@@ -1918,15 +2052,17 @@ export default function ProjectDetailPage() {
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
           <Button onClick={() => setMilestoneDialogOpen(false)}>Cancel</Button>
-          <Button variant="contained" onClick={handleAddMilestone} sx={{ fontWeight: "bold" }}>
-            Save Milestone
+          <Button variant="contained" onClick={handleSaveMilestone} sx={{ fontWeight: "bold" }}>
+            {editingMilestoneId ? "Update Milestone" : "Save Milestone"}
           </Button>
         </DialogActions>
       </Dialog>
 
-      {/* Add Task Dialog */}
+      {/* Add / Edit Task Dialog */}
       <Dialog open={taskDialogOpen} onClose={() => setTaskDialogOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ fontWeight: "bold" }}>Add Project Task</DialogTitle>
+        <DialogTitle sx={{ fontWeight: "bold" }}>
+          {editingTaskId ? "Edit Project Task" : "Add Project Task"}
+        </DialogTitle>
         <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, pt: 2 }}>
           <TextField
             required
@@ -1950,11 +2086,25 @@ export default function ProjectDetailPage() {
             value={newTaskAssignee}
             onChange={(e) => setNewTaskAssignee(e.target.value)}
           />
+          {editingTaskId && (
+            <TextField
+              select
+              fullWidth
+              label="Task Status"
+              value={newTaskStatus}
+              onChange={(e) => setNewTaskStatus(e.target.value)}
+            >
+              <MenuItem value="TODO">To Do</MenuItem>
+              <MenuItem value="IN_PROGRESS">In Progress</MenuItem>
+              <MenuItem value="REVIEW">In Review</MenuItem>
+              <MenuItem value="DONE">Completed (Done)</MenuItem>
+            </TextField>
+          )}
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
           <Button onClick={() => setTaskDialogOpen(false)}>Cancel</Button>
-          <Button variant="contained" onClick={handleAddTask} sx={{ fontWeight: "bold" }}>
-            Save Task
+          <Button variant="contained" onClick={handleSaveTask} sx={{ fontWeight: "bold" }}>
+            {editingTaskId ? "Update Task" : "Save Task"}
           </Button>
         </DialogActions>
       </Dialog>
