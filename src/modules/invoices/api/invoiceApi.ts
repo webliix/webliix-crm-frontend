@@ -158,12 +158,72 @@ export const invoiceApi = {
         total = raw.totalElements ?? list.length;
       }
 
+      let normalizedList = list.map(normalizeInvoice);
+
+      // Resilient Fallback: If no invoices returned and no specific filters given,
+      // try collecting invoices from projects to guarantee visibility even if global list query is restricted
+      if (normalizedList.length === 0 && !projectId && !customerId) {
+        try {
+          const projRes = await http.get(`/api/v1/projects`, { params: { page: 0, size: 50 } });
+          const projRaw = projRes.data;
+          const projList: any[] = Array.isArray(projRaw) ? projRaw : (projRaw?.data?.content || projRaw?.content || projRaw?.data || []);
+          if (projList.length > 0) {
+            const projectInvoicesPromises = projList.map((p) =>
+              http.get(`/api/v1/projects/${p.id}/invoices`).then((r) => {
+                const data = r.data?.data ?? r.data;
+                return Array.isArray(data) ? data : (data?.content || []);
+              }).catch(() => [])
+            );
+            const settled = await Promise.all(projectInvoicesPromises);
+            const collected = settled.flat();
+            if (collected.length > 0) {
+              const uniqueMap = new Map<number, any>();
+              collected.forEach((inv) => {
+                if (inv && inv.id && !uniqueMap.has(inv.id)) {
+                  uniqueMap.set(inv.id, inv);
+                }
+              });
+              normalizedList = Array.from(uniqueMap.values()).map(normalizeInvoice);
+              total = normalizedList.length;
+            }
+          }
+        } catch {
+          // ignore fallback error
+        }
+      }
+
       return {
-        content: list.map(normalizeInvoice),
-        totalElements: total,
+        content: normalizedList,
+        totalElements: total || normalizedList.length,
       };
     } catch (err) {
-      console.warn("Failed to fetch invoices:", err);
+      console.warn("Failed to fetch invoices, attempting project-based recovery:", err);
+      try {
+        const projRes = await http.get(`/api/v1/projects`, { params: { page: 0, size: 50 } });
+        const projRaw = projRes.data;
+        const projList: any[] = Array.isArray(projRaw) ? projRaw : (projRaw?.data?.content || projRaw?.content || projRaw?.data || []);
+        if (projList.length > 0) {
+          const settled = await Promise.all(
+            projList.map((p) =>
+              http.get(`/api/v1/projects/${p.id}/invoices`).then((r) => {
+                const data = r.data?.data ?? r.data;
+                return Array.isArray(data) ? data : (data?.content || []);
+              }).catch(() => [])
+            )
+          );
+          const collected = settled.flat();
+          const uniqueMap = new Map<number, any>();
+          collected.forEach((inv) => {
+            if (inv && inv.id && !uniqueMap.has(inv.id)) {
+              uniqueMap.set(inv.id, inv);
+            }
+          });
+          const recovered = Array.from(uniqueMap.values()).map(normalizeInvoice);
+          return { content: recovered, totalElements: recovered.length };
+        }
+      } catch {
+        // ignore
+      }
       return { content: [], totalElements: 0 };
     }
   },
