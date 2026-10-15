@@ -1,4 +1,4 @@
-import { type ReactNode, type ChangeEvent } from "react";
+import { useState, type ReactNode, type ChangeEvent } from "react";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
 import TableCell from "@mui/material/TableCell";
@@ -50,14 +50,35 @@ export function AppDataTable<RowType extends Record<string, any>>({
   onPageSizeChange,
   onRowClick,
 }: AppDataTableProps<RowType>) {
+  const [internalPage, setInternalPage] = useState(0);
+  const [internalPageSize, setInternalPageSize] = useState(pageSize);
+
+  const isControlled = Boolean(onPageChange);
+  const activePage = isControlled ? page : internalPage;
+  const activePageSize = isControlled ? pageSize : internalPageSize;
+  const effectiveTotal = isControlled ? totalRows : (totalRows > 0 ? totalRows : rows.length);
+
+  const displayRows = isControlled
+    ? rows
+    : rows.slice(activePage * activePageSize, activePage * activePageSize + activePageSize);
+
   const handleChangePage = (_: unknown, newPage: number) => {
-    onPageChange?.(newPage);
+    if (isControlled) {
+      onPageChange?.(newPage);
+    } else {
+      setInternalPage(newPage);
+    }
   };
 
   const handleChangeRowsPerPage = (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const newSize = Number(event.target.value);
-    onPageSizeChange?.(newSize);
-    onPageChange?.(0);
+    if (isControlled) {
+      onPageSizeChange?.(newSize);
+      onPageChange?.(0);
+    } else {
+      setInternalPageSize(newSize);
+      setInternalPage(0);
+    }
   };
 
   return (
@@ -103,14 +124,14 @@ export function AppDataTable<RowType extends Record<string, any>>({
                   <TableSkeleton rows={pageSize > 5 ? 5 : pageSize} cols={columns.length} />
                 </TableCell>
               </TableRow>
-            ) : rows.length === 0 ? (
+            ) : displayRows.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={columns.length} sx={{ py: 6 }}>
                   <EmptyState title={emptyTitle} message={emptyMessage} />
                 </TableCell>
               </TableRow>
             ) : (
-              rows.map((row, rowIndex) => (
+              displayRows.map((row, rowIndex) => (
                 <TableRow
                   key={String((row as any).id ?? rowIndex)}
                   hover
@@ -151,14 +172,14 @@ export function AppDataTable<RowType extends Record<string, any>>({
         </Table>
       </TableContainer>
 
-      {totalRows > 0 && (
+      {effectiveTotal > 0 && (
         <Box sx={{ borderTop: `1px solid ${tokens.colors.secondary[200]}`, bgcolor: "#ffffff", overflowX: "auto" }}>
           <TablePagination
             component="div"
-            count={totalRows}
-            page={page}
+            count={effectiveTotal}
+            page={activePage}
             onPageChange={handleChangePage}
-            rowsPerPage={pageSize}
+            rowsPerPage={activePageSize}
             onRowsPerPageChange={handleChangeRowsPerPage}
             rowsPerPageOptions={pageSizeOptions}
             sx={{

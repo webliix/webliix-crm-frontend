@@ -536,8 +536,19 @@ export default function EmployeeListPage() {
       }
     >
       {/* Tabs Bar */}
-      <Box sx={{ borderBottom: 1, borderColor: "divider", mb: 3 }}>
-        <Tabs value={currentTab} onChange={handleTabChange} textColor="primary" indicatorColor="primary">
+      <Box sx={{ borderBottom: 1, borderColor: "divider", mb: 3, width: "100%", overflowX: "auto" }}>
+        <Tabs
+          value={currentTab}
+          onChange={handleTabChange}
+          textColor="primary"
+          indicatorColor="primary"
+          variant="scrollable"
+          scrollButtons="auto"
+          allowScrollButtonsMobile
+          sx={{
+            "& .MuiTab-root": { minHeight: 48, whiteSpace: "nowrap" }
+          }}
+        >
           <Tab
             label="Employees Directory"
             icon={<PeopleIcon />}

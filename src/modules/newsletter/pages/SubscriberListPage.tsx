@@ -22,6 +22,7 @@ import {
   Tooltip,
   Alert,
   CircularProgress,
+  TablePagination,
 } from "@mui/material";
 import SendIcon from "@mui/icons-material/Send";
 import DeleteIcon from "@mui/icons-material/Delete";
@@ -40,6 +41,9 @@ export default function SubscriberListPage() {
   const [subscribers, setSubscribers] = useState<NewsletterSubscriber[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState<number>(0);
+  const [rowsPerPage, setRowsPerPage] = useState<number>(20);
+  const [totalElements, setTotalElements] = useState<number>(0);
 
   // Broadcast dialog state
   const [isBroadcastOpen, setIsBroadcastOpen] = useState(false);
@@ -52,9 +56,11 @@ export default function SubscriberListPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await newsletterApi.getSubscribers(0, 100);
-      const data = res.data?.data?.content || res.data?.content || res.data || [];
-      setSubscribers(data);
+      const res = await newsletterApi.getSubscribers(page, rowsPerPage);
+      const content = res.data?.data?.content || res.data?.content || [];
+      const total = res.data?.data?.totalElements ?? res.data?.totalElements ?? content.length;
+      setSubscribers(Array.isArray(content) ? content : (Array.isArray(res.data) ? res.data : []));
+      setTotalElements(total);
     } catch (err: any) {
       setError(err.response?.data?.message || err.message || "Failed to load newsletter subscribers.");
     } finally {
@@ -64,7 +70,7 @@ export default function SubscriberListPage() {
 
   useEffect(() => {
     fetchSubscribers();
-  }, []);
+  }, [page, rowsPerPage]);
 
   const handleToggleStatus = async (id: number) => {
     try {
@@ -241,6 +247,19 @@ export default function SubscriberListPage() {
           </TableBody>
         </Table>
       </TableContainer>
+
+      <TablePagination
+        component="div"
+        count={totalElements}
+        page={page}
+        onPageChange={(_, newPage) => setPage(newPage)}
+        rowsPerPage={rowsPerPage}
+        onRowsPerPageChange={(e) => {
+          setRowsPerPage(parseInt(e.target.value, 10));
+          setPage(0);
+        }}
+        rowsPerPageOptions={[10, 20, 50, 100]}
+      />
 
       {/* Broadcast Email Modal */}
       <Dialog open={isBroadcastOpen} onClose={() => !sendingBroadcast && setIsBroadcastOpen(false)} maxWidth="md" fullWidth>

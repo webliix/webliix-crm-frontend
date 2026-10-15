@@ -484,7 +484,7 @@ export default function ProjectListPage() {
           }}
         />
 
-        <Box sx={{ display: "flex", gap: 1 }}>
+        <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
           <Button
             size="small"
             variant={statusFilter === "ALL" ? "contained" : "outlined"}

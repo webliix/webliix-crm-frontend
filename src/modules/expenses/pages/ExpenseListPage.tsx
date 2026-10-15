@@ -14,6 +14,7 @@ import Button from "@mui/material/Button";
 import IconButton from "@mui/material/IconButton";
 import TextField from "@mui/material/TextField";
 import MenuItem from "@mui/material/MenuItem";
+import TablePagination from "@mui/material/TablePagination";
 import Dialog from "@mui/material/Dialog";
 import DialogTitle from "@mui/material/DialogTitle";
 import DialogContent from "@mui/material/DialogContent";
@@ -102,6 +103,9 @@ export default function ExpenseListPage() {
   const [stats, setStats] = useState<ExpenseStatistics | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState<number>(0);
+  const [rowsPerPage, setRowsPerPage] = useState<number>(20);
+  const [totalElements, setTotalElements] = useState<number>(0);
 
   // Filters State
   const [selectedCategory, setSelectedCategory] = useState<string>("ALL");
@@ -160,12 +164,14 @@ export default function ExpenseListPage() {
         category: categoryParam,
         status: statusParam,
         keyword: keywordParam,
-        size: 100,
+        page,
+        size: rowsPerPage,
       }),
       expenseApi.getExpenseStatistics(),
     ])
       .then(([resExpenses, resStats]) => {
         setExpenses(resExpenses.content);
+        setTotalElements(resExpenses.totalElements);
         setStats(resStats);
         setLoading(false);
       })
@@ -177,11 +183,15 @@ export default function ExpenseListPage() {
 
   useEffect(() => {
     loadData();
-  }, [selectedCategory, selectedStatus]);
+  }, [selectedCategory, selectedStatus, page, rowsPerPage]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    loadData();
+    if (page !== 0) {
+      setPage(0);
+    } else {
+      loadData();
+    }
   };
 
   const handleOpenCreate = () => {
@@ -437,7 +447,10 @@ export default function ExpenseListPage() {
               size="small"
               label="Category"
               value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
+              onChange={(e) => {
+                setSelectedCategory(e.target.value);
+                setPage(0);
+              }}
               sx={{ minWidth: 170 }}
             >
               {CATEGORIES.map((c) => (
@@ -452,7 +465,10 @@ export default function ExpenseListPage() {
               size="small"
               label="Status"
               value={selectedStatus}
-              onChange={(e) => setSelectedStatus(e.target.value)}
+              onChange={(e) => {
+                setSelectedStatus(e.target.value);
+                setPage(0);
+              }}
               sx={{ minWidth: 150 }}
             >
               <MenuItem value="ALL">All Statuses</MenuItem>
@@ -634,6 +650,18 @@ export default function ExpenseListPage() {
               </TableBody>
             </Table>
           </TableContainer>
+          <TablePagination
+            component="div"
+            count={totalElements}
+            page={page}
+            onPageChange={(_, newPage) => setPage(newPage)}
+            rowsPerPage={rowsPerPage}
+            onRowsPerPageChange={(e) => {
+              setRowsPerPage(parseInt(e.target.value, 10));
+              setPage(0);
+            }}
+            rowsPerPageOptions={[10, 20, 50, 100]}
+          />
         </Card>
       )}
 

@@ -32,9 +32,10 @@ import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import EditNoteOutlinedIcon from "@mui/icons-material/EditNoteOutlined";
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import PrintOutlinedIcon from "@mui/icons-material/PrintOutlined";
+import TablePagination from "@mui/material/TablePagination";
 import Divider from "@mui/material/Divider";
 import { tokens } from "@/theme/tokens";
-import { invoiceApi, type InvoiceItem } from "../api/invoiceApi";
+import { invoiceApi, type InvoiceItem, type InvoiceDashboardData } from "../api/invoiceApi";
 import { customerService } from "@/modules/customers/services/customer.service";
 import { projectApi, type ProjectItem } from "@/modules/projects/api/projectApi";
 import type { CustomerResponse } from "@/modules/customers/types/customer.types";
@@ -44,6 +45,10 @@ export default function InvoiceListPage() {
   const [customers, setCustomers] = useState<CustomerResponse[]>([]);
   const [projects, setProjects] = useState<ProjectItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [page, setPage] = useState<number>(0);
+  const [rowsPerPage, setRowsPerPage] = useState<number>(20);
+  const [totalElements, setTotalElements] = useState<number>(0);
+  const [dashboardStats, setDashboardStats] = useState<InvoiceDashboardData | null>(null);
 
   // Create Invoice Dialog State
   const [createDialogOpen, setCreateDialogOpen] = useState<boolean>(false);
@@ -197,20 +202,25 @@ export default function InvoiceListPage() {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [resInv, resCust, resProj] = await Promise.allSettled([
-        invoiceApi.getInvoices(0, 100),
+      const [resInv, resCust, resProj, resDash] = await Promise.allSettled([
+        invoiceApi.getInvoices(page, rowsPerPage),
         customerService.getAllCustomers().catch(() => []),
-        projectApi.getProjects(0, 100).catch(() => ({ content: [], totalElements: 0 })),
+        projectApi.getProjects(0, 50).catch(() => ({ content: [], totalElements: 0 })),
+        invoiceApi.getDashboard().catch(() => null),
       ]);
 
       if (resInv.status === "fulfilled" && resInv.value) {
         setInvoices(resInv.value.content || []);
+        setTotalElements(resInv.value.totalElements || 0);
       }
       if (resCust.status === "fulfilled" && resCust.value) {
         setCustomers(Array.isArray(resCust.value) ? resCust.value : []);
       }
       if (resProj.status === "fulfilled" && resProj.value) {
         setProjects(resProj.value.content || []);
+      }
+      if (resDash.status === "fulfilled" && resDash.value) {
+        setDashboardStats(resDash.value);
       }
     } catch (err) {
       console.error("Failed to load invoices data:", err);
@@ -221,11 +231,11 @@ export default function InvoiceListPage() {
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [page, rowsPerPage]);
 
-  const totalBilling = invoices.reduce((sum, i) => sum + (i.totalAmount || 0), 0);
-  const totalPaid = invoices.reduce((sum, i) => sum + (i.paidAmount || 0), 0);
-  const totalPending = invoices.reduce((sum, i) => sum + (i.pendingAmount || 0), 0);
+  const totalBilling = dashboardStats ? dashboardStats.totalAmount : invoices.reduce((sum, i) => sum + (i.totalAmount || 0), 0);
+  const totalPaid = dashboardStats ? dashboardStats.paidAmount : invoices.reduce((sum, i) => sum + (i.paidAmount || 0), 0);
+  const totalPending = dashboardStats ? dashboardStats.pendingAmount : invoices.reduce((sum, i) => sum + (i.pendingAmount || 0), 0);
 
   const getStatusChip = (status: string) => {
     const st = (status || "").toUpperCase();
@@ -593,6 +603,18 @@ export default function InvoiceListPage() {
               </TableBody>
             </Table>
           </TableContainer>
+          <TablePagination
+            component="div"
+            count={totalElements}
+            page={page}
+            onPageChange={(_, newPage) => setPage(newPage)}
+            rowsPerPage={rowsPerPage}
+            onRowsPerPageChange={(e) => {
+              setRowsPerPage(parseInt(e.target.value, 10));
+              setPage(0);
+            }}
+            rowsPerPageOptions={[10, 20, 50, 100]}
+          />
         </Card>
       )}
 

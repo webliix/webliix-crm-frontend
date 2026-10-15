@@ -31,6 +31,7 @@ import {
   Alert,
   Tabs,
   Tab,
+  TablePagination,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteIcon from "@mui/icons-material/Delete";
@@ -58,6 +59,9 @@ export default function UserListPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState<number>(0);
+  const [rowsPerPage, setRowsPerPage] = useState<number>(20);
+  const [totalElements, setTotalElements] = useState<number>(0);
 
   // Create User Modal state
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -82,9 +86,11 @@ export default function UserListPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await userApi.getAllUsers(search, 0, 100);
-      const data = res.data?.data?.content || res.data?.content || res.data || [];
-      setUsers(data);
+      const res = await userApi.getAllUsers(search, page, rowsPerPage);
+      const content = res.data?.data?.content || res.data?.content || [];
+      const total = res.data?.data?.totalElements ?? res.data?.totalElements ?? content.length;
+      setUsers(Array.isArray(content) ? content : (Array.isArray(res.data) ? res.data : []));
+      setTotalElements(total);
     } catch (err: any) {
       setError(err.response?.data?.message || err.message || "Failed to fetch users.");
     } finally {
@@ -94,7 +100,7 @@ export default function UserListPage() {
 
   useEffect(() => {
     fetchUsers();
-  }, [search]);
+  }, [search, page, rowsPerPage]);
 
   const handleCreateUser = async () => {
     if (!createPayload.firstName.trim() || !createPayload.email.trim() || !createPayload.password.trim()) {
@@ -465,7 +471,10 @@ export default function UserListPage() {
           <TextField
             placeholder="Search by name, email, or role..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(0);
+            }}
             size="small"
             sx={{ minWidth: { xs: "100%", md: 320 } }}
             InputProps={{
@@ -557,6 +566,19 @@ export default function UserListPage() {
           </TableBody>
         </Table>
       </TableContainer>
+
+      <TablePagination
+        component="div"
+        count={totalElements}
+        page={page}
+        onPageChange={(_, newPage) => setPage(newPage)}
+        rowsPerPage={rowsPerPage}
+        onRowsPerPageChange={(e) => {
+          setRowsPerPage(parseInt(e.target.value, 10));
+          setPage(0);
+        }}
+        rowsPerPageOptions={[10, 20, 50, 100]}
+      />
 
       {/* Create User Dialog */}
       <Dialog open={isCreateOpen} onClose={() => !submitting && setIsCreateOpen(false)} maxWidth="sm" fullWidth>

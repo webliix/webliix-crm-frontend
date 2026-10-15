@@ -83,6 +83,16 @@ export interface ProjectBillingSummary {
   paymentSubmissions: any[];
 }
 
+export interface InvoiceDashboardData {
+  totalInvoices: number;
+  paidInvoices: number;
+  pendingInvoices: number;
+  overdueInvoices: number;
+  totalAmount: number;
+  paidAmount: number;
+  pendingAmount: number;
+}
+
 function normalizeInvoice(raw: any): InvoiceItem {
   const total = Number(raw.totalAmount) || 0;
   const paid = Number(raw.paidAmount) || 0;
@@ -328,6 +338,25 @@ export const invoiceApi = {
       return true;
     } catch {
       return false;
+    }
+  },
+
+  async getDashboard(): Promise<InvoiceDashboardData | null> {
+    try {
+      const res = await http.get(`/api/v1/invoices/dashboard`);
+      const raw = res.data?.data ?? res.data;
+      if (!raw) return null;
+      return {
+        totalInvoices: Number(raw.totalInvoices) || 0,
+        paidInvoices: Number(raw.paidInvoices) || 0,
+        pendingInvoices: Number(raw.pendingInvoices) || 0,
+        overdueInvoices: Number(raw.overdueInvoices) || 0,
+        totalAmount: Number(raw.totalAmount) || 0,
+        paidAmount: Number(raw.paidAmount) || 0,
+        pendingAmount: Number(raw.pendingAmount) || 0,
+      };
+    } catch {
+      return null;
     }
   },
 };
