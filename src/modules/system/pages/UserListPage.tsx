@@ -50,10 +50,13 @@ import { LoadingScreen, ErrorState } from "@/shared/components/ui/feedback";
 import { useAppSelector } from "@/app/store/redux";
 import { selectUser } from "@/modules/auth/store/selectors";
 import { userApi, type UserItem, type CreateUserPayload, type UpdateUserPayload } from "../api/user.api";
+import { RolesPermissionsManager } from "../components/RolesPermissionsManager";
 
 export default function UserListPage() {
   const currentUser = useAppSelector(selectUser);
   const isSuperAdmin = currentUser?.roles?.includes("SUPER_ADMIN");
+
+  const [mainSection, setMainSection] = useState<"users" | "roles">("users");
 
   const [users, setUsers] = useState<UserItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -224,19 +227,54 @@ export default function UserListPage() {
       title="User Accounts & Role Control"
       subtitle="Categorize and manage internal staff, administrators, Super Admin permissions, and customer accounts"
       actions={
-        <Box sx={{ display: "flex", gap: 2 }}>
-          <IconButton onClick={fetchUsers} color="inherit" title="Refresh">
-            <RefreshIcon />
-          </IconButton>
-          <AppButton variant="contained" startIcon={<AddIcon />} onClick={() => setIsCreateOpen(true)}>
-            Add New User
-          </AppButton>
-        </Box>
+        mainSection === "users" ? (
+          <Box sx={{ display: "flex", gap: 2 }}>
+            <IconButton onClick={fetchUsers} color="inherit" title="Refresh">
+              <RefreshIcon />
+            </IconButton>
+            <AppButton variant="contained" startIcon={<AddIcon />} onClick={() => setIsCreateOpen(true)}>
+              Add New User
+            </AppButton>
+          </Box>
+        ) : null
       }
     >
-      {error && <ErrorState title="Error Loading Users" message={error} onRetry={fetchUsers} />}
+      {/* Top Navigation Switcher */}
+      <Box sx={{ borderBottom: 1, borderColor: "divider", mb: 3 }}>
+        <Tabs
+          value={mainSection}
+          onChange={(_, val) => setMainSection(val)}
+          sx={{
+            "& .MuiTab-root": {
+              textTransform: "none",
+              fontWeight: 700,
+              fontSize: "0.9375rem",
+              minHeight: 48,
+            },
+          }}
+        >
+          <Tab
+            value="users"
+            icon={<PeopleIcon />}
+            iconPosition="start"
+            label="User Accounts"
+          />
+          <Tab
+            value="roles"
+            icon={<AdminPanelSettingsIcon />}
+            iconPosition="start"
+            label="Roles & Permissions Matrix (Super Admin)"
+          />
+        </Tabs>
+      </Box>
 
-      {/* Metrics Row categorized by roles */}
+      {mainSection === "roles" ? (
+        <RolesPermissionsManager />
+      ) : (
+        <>
+          {error && <ErrorState title="Error Loading Users" message={error} onRetry={fetchUsers} />}
+
+          {/* Metrics Row categorized by roles */}
       <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", md: "repeat(3, 1fr)", lg: "repeat(6, 1fr)" }, gap: 2, mb: 3 }}>
         <Card
           variant="outlined"
@@ -579,6 +617,8 @@ export default function UserListPage() {
         }}
         rowsPerPageOptions={[10, 20, 50, 100]}
       />
+        </>
+      )}
 
       {/* Create User Dialog */}
       <Dialog open={isCreateOpen} onClose={() => !submitting && setIsCreateOpen(false)} maxWidth="sm" fullWidth>
