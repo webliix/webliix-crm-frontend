@@ -328,21 +328,48 @@ export default function ProjectListPage() {
     );
   };
 
-  const filteredProjects = projects.filter((p) => {
-    const matchesSearch =
-      !searchQuery ||
-      p.projectName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (p.projectCode && p.projectCode.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (p.customerName && p.customerName.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (p.customerCompanyName && p.customerCompanyName.toLowerCase().includes(searchQuery.toLowerCase()));
+  const getStatusOrder = (st?: string) => {
+    switch (st?.toUpperCase()) {
+      case "IN_PROGRESS":
+      case "ACTIVE":
+        return 1;
+      case "PLANNING":
+      case "TESTING":
+      case "NOT_STARTED":
+        return 2;
+      case "ON_HOLD":
+        return 3;
+      case "COMPLETED":
+        return 4;
+      case "CANCELLED":
+        return 5;
+      default:
+        return 6;
+    }
+  };
 
-    const matchesStatus =
-      statusFilter === "ALL" ||
-      (statusFilter === "IN_PROGRESS" && (p.status === "IN_PROGRESS" || p.status === "PLANNING")) ||
-      (statusFilter === "COMPLETED" && p.status === "COMPLETED");
+  const filteredProjects = projects
+    .filter((p) => {
+      const matchesSearch =
+        !searchQuery ||
+        p.projectName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (p.projectCode && p.projectCode.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (p.customerName && p.customerName.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (p.customerCompanyName && p.customerCompanyName.toLowerCase().includes(searchQuery.toLowerCase()));
 
-    return matchesSearch && matchesStatus;
-  });
+      const matchesStatus =
+        statusFilter === "ALL" ||
+        (statusFilter === "IN_PROGRESS" && (p.status === "IN_PROGRESS" || p.status === "PLANNING")) ||
+        (statusFilter === "COMPLETED" && p.status === "COMPLETED");
+
+      return matchesSearch && matchesStatus;
+    })
+    .sort((a, b) => {
+      const orderA = getStatusOrder(a.status);
+      const orderB = getStatusOrder(b.status);
+      if (orderA !== orderB) return orderA - orderB;
+      return (b.id || 0) - (a.id || 0);
+    });
 
   const totalCount = projects.length;
   const inProgressCount = projects.filter((p) => p.status === "IN_PROGRESS" || p.status === "ACTIVE").length;

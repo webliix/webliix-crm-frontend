@@ -29,22 +29,30 @@ export function CustomerTable({
   const [statusFilter, setStatusFilter] = useState<"ALL" | "ACTIVE" | "INACTIVE">("ALL");
 
   const filteredCustomers = useMemo(() => {
-    return customers.filter((c) => {
-      const matchesSearch =
-        search === "" ||
-        c.companyName?.toLowerCase().includes(search.toLowerCase()) ||
-        c.customerCode?.toLowerCase().includes(search.toLowerCase()) ||
-        c.contactPerson?.toLowerCase().includes(search.toLowerCase()) ||
-        c.email?.toLowerCase().includes(search.toLowerCase()) ||
-        c.phone?.toLowerCase().includes(search.toLowerCase());
+    return customers
+      .filter((c) => {
+        const matchesSearch =
+          search === "" ||
+          c.companyName?.toLowerCase().includes(search.toLowerCase()) ||
+          c.customerCode?.toLowerCase().includes(search.toLowerCase()) ||
+          c.contactPerson?.toLowerCase().includes(search.toLowerCase()) ||
+          c.email?.toLowerCase().includes(search.toLowerCase()) ||
+          c.phone?.toLowerCase().includes(search.toLowerCase());
 
-      const matchesStatus =
-        statusFilter === "ALL" ||
-        (statusFilter === "ACTIVE" && c.active !== false) ||
-        (statusFilter === "INACTIVE" && c.active === false);
+        const matchesStatus =
+          statusFilter === "ALL" ||
+          (statusFilter === "ACTIVE" && c.active !== false) ||
+          (statusFilter === "INACTIVE" && c.active === false);
 
-      return matchesSearch && matchesStatus;
-    });
+        return matchesSearch && matchesStatus;
+      })
+      .sort((a, b) => {
+        const activeProjA = (a as any).activeProjectsCount || ((a as any).totalProjects && a.active !== false ? 1 : 0);
+        const activeProjB = (b as any).activeProjectsCount || ((b as any).totalProjects && b.active !== false ? 1 : 0);
+        if (activeProjB !== activeProjA) return activeProjB - activeProjA;
+        if (a.active !== b.active) return (b.active ? 1 : 0) - (a.active ? 1 : 0);
+        return (b.id || 0) - (a.id || 0);
+      });
   }, [customers, search, statusFilter]);
 
   const handleWhatsApp = (e: React.MouseEvent, phone?: string, name?: string) => {

@@ -60,6 +60,14 @@ export default function ReportsPage() {
       .finally(() => setLoading(false));
   }, []);
 
+  const currentYear = new Date().getFullYear();
+
+  const marginVal = profit?.profitMargin != null
+    ? profit.profitMargin
+    : revenue?.totalRevenue && profit?.totalProfit
+      ? (profit.totalProfit / revenue.totalRevenue) * 100
+      : null;
+
   const summaryCards = [
     {
       label: "Total Revenue",
@@ -69,16 +77,22 @@ export default function ReportsPage() {
       bg: tokens.colors.primary[50],
     },
     {
-      label: "Total Profit",
-      value: profit?.totalProfit != null ? `₹${profit.totalProfit.toLocaleString()}` : "—",
+      label: "Total Expenses",
+      value: profit?.totalExpense != null ? `₹${profit.totalExpense.toLocaleString()}` : "—",
       icon: <AccountBalanceIcon fontSize="large" />,
+      color: tokens.colors.secondary[700],
+      bg: tokens.colors.secondary[100],
+    },
+    {
+      label: "Net Profit",
+      value: profit?.totalProfit != null ? `₹${profit.totalProfit.toLocaleString()}` : "—",
+      icon: <TrendingUpIcon fontSize="large" />,
       color: tokens.colors.success[700],
       bg: tokens.colors.success[50],
     },
     {
       label: "Profit Margin",
-      value:
-        profit?.profitMargin != null ? `${profit.profitMargin.toFixed(1)}%` : "—",
+      value: marginVal != null ? `${marginVal.toFixed(1)}%` : "—",
       icon: <BarChartIcon fontSize="large" />,
       color: tokens.colors.warning[700],
       bg: tokens.colors.warning[50],
@@ -175,7 +189,7 @@ export default function ReportsPage() {
                       {monthly.map((row, idx) => (
                         <TableRow key={idx} hover>
                           <TableCell sx={{ fontWeight: 600 }}>{row.month}</TableCell>
-                          <TableCell>{row.year}</TableCell>
+                          <TableCell>{row.year || currentYear}</TableCell>
                           <TableCell sx={{ fontWeight: 800, color: tokens.colors.primary.main }}>
                             {row.currency ?? "₹"}{row.revenue?.toLocaleString()}
                           </TableCell>

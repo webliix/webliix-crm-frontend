@@ -40,7 +40,8 @@ export interface UpdateUserPayload {
 }
 
 export interface RolePermissionAssignment {
-  permissionCode: string;
+  code?: string;
+  permissionCode?: string;
   scope: "OWN" | "DEPARTMENT" | "ALL";
 }
 

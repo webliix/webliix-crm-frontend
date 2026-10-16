@@ -86,14 +86,22 @@ export function RolesPermissionsManager() {
       const map = new Map<string, "OWN" | "DEPARTMENT" | "ALL">();
       if (roleData.permissions) {
         roleData.permissions.forEach((p) => {
-          map.set(p.permissionCode, p.scope || "OWN");
+          const permCode = (p as any).code || p.permissionCode;
+          if (permCode) {
+            map.set(permCode, p.scope || "OWN");
+          }
         });
       }
       setActiveAssignments(map);
     } catch {
       const map = new Map<string, "OWN" | "DEPARTMENT" | "ALL">();
       if (role.permissions) {
-        role.permissions.forEach((p) => map.set(p.permissionCode, p.scope || "OWN"));
+        role.permissions.forEach((p) => {
+          const permCode = (p as any).code || p.permissionCode;
+          if (permCode) {
+            map.set(permCode, p.scope || "OWN");
+          }
+        });
       }
       setActiveAssignments(map);
     }
@@ -134,6 +142,7 @@ export function RolesPermissionsManager() {
     try {
       const payload: RolePermissionAssignment[] = Array.from(activeAssignments.entries()).map(
         ([code, scope]) => ({
+          code,
           permissionCode: code,
           scope,
         })
