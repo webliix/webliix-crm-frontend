@@ -346,14 +346,20 @@ export const invoiceApi = {
       const res = await http.get(`/api/v1/invoices/dashboard`);
       const raw = res.data?.data ?? res.data;
       if (!raw) return null;
+      const totalAmount = Number(raw.totalAmount ?? raw.totalRevenue) || 0;
+      const paidAmount = Number(raw.paidAmount) || 0;
+      const pendingAmount = raw.pendingAmount !== undefined && raw.pendingAmount !== null
+        ? Number(raw.pendingAmount)
+        : Math.max(0, totalAmount - paidAmount);
+
       return {
         totalInvoices: Number(raw.totalInvoices) || 0,
         paidInvoices: Number(raw.paidInvoices) || 0,
         pendingInvoices: Number(raw.pendingInvoices) || 0,
         overdueInvoices: Number(raw.overdueInvoices) || 0,
-        totalAmount: Number(raw.totalAmount) || 0,
-        paidAmount: Number(raw.paidAmount) || 0,
-        pendingAmount: Number(raw.pendingAmount) || 0,
+        totalAmount,
+        paidAmount,
+        pendingAmount,
       };
     } catch {
       return null;

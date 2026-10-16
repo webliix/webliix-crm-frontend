@@ -218,6 +218,13 @@ export default function EmployeeListPage() {
   const [reviewPaymentNotes, setReviewPaymentNotes] = useState("");
   const [submittingPaymentReview, setSubmittingPaymentReview] = useState(false);
 
+  // Portal Access & Credentials Modal
+  const [accessModalOpen, setAccessModalOpen] = useState(false);
+  const [selectedEmpForAccess, setSelectedEmpForAccess] = useState<EmployeeItem | null>(null);
+  const [accessPassword, setAccessPassword] = useState("");
+  const [accessEnabled, setAccessEnabled] = useState(true);
+  const [submittingAccess, setSubmittingAccess] = useState(false);
+
   // Fetch Employees & Reference Data
   const loadEmployees = async () => {
     setLoadingEmployees(true);
@@ -462,6 +469,59 @@ export default function EmployeeListPage() {
       });
     } finally {
       setSubmittingPaymentReview(false);
+    }
+  };
+
+  const handleOpenAccessModal = (emp: EmployeeItem) => {
+    setSelectedEmpForAccess(emp);
+    setAccessPassword("");
+    setAccessEnabled(emp.active !== false);
+    setAccessModalOpen(true);
+  };
+
+  const handleSaveAccess = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedEmpForAccess) return;
+    setSubmittingAccess(true);
+    try {
+      const payload: any = {
+        firstName: selectedEmpForAccess.firstName,
+        lastName: selectedEmpForAccess.lastName,
+        email: selectedEmpForAccess.email,
+        phone: selectedEmpForAccess.phone,
+        departmentId: selectedEmpForAccess.departmentId,
+        designationId: selectedEmpForAccess.designationId,
+        employmentType: selectedEmpForAccess.employmentType || "FULL_TIME",
+        joiningDate: selectedEmpForAccess.joiningDate ? selectedEmpForAccess.joiningDate.split("T")[0] : new Date().toISOString().split("T")[0],
+        salary: selectedEmpForAccess.salary,
+        active: accessEnabled,
+        address: selectedEmpForAccess.address || "",
+        city: selectedEmpForAccess.city || "",
+        state: selectedEmpForAccess.state || "",
+        country: selectedEmpForAccess.country || "",
+        emergencyContact: selectedEmpForAccess.emergencyContact || "",
+      };
+
+      if (accessPassword.trim()) {
+        payload.password = accessPassword.trim();
+      }
+
+      await http.put(`/api/v1/employees/${selectedEmpForAccess.id}`, payload);
+      setNotification({
+        message: accessPassword.trim()
+          ? "Employee login password and portal access updated successfully!"
+          : "Employee portal status updated successfully!",
+        severity: "success",
+      });
+      setAccessModalOpen(false);
+      loadEmployees();
+    } catch (err: any) {
+      setNotification({
+        message: err.response?.data?.message || "Failed to update employee access",
+        severity: "error",
+      });
+    } finally {
+      setSubmittingAccess(false);
     }
   };
 
@@ -712,6 +772,11 @@ export default function EmployeeListPage() {
                           />
                         </TableCell>
                         <TableCell sx={{ textAlign: "right" }}>
+                          <Tooltip title="Manage Access & Credentials">
+                            <IconButton size="small" onClick={() => handleOpenAccessModal(e)} color="info">
+                              <VpnKeyIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
                           <Tooltip title="Edit Employee">
                             <IconButton size="small" onClick={() => handleOpenEditModal(e)} color="primary">
                               <EditIcon fontSize="small" />
@@ -1395,6 +1460,129 @@ export default function EmployeeListPage() {
             {submittingPaymentReview ? <CircularProgress size={20} /> : `Submit as ${reviewPaymentStatus}`}
           </Button>
         </DialogActions>
+      </Dialog>
+
+      {/* ==================== PORTAL ACCESS & CREDENTIALS DIALOG ==================== */}
+      <Dialog
+        open={accessModalOpen}
+        onClose={() => setAccessModalOpen(false)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{ sx: { borderRadius: tokens.borderRadius.lg } }}
+      >
+        <DialogTitle sx={{ display: "flex", alignItems: "center", gap: 1.5, pb: 1 }}>
+          <VpnKeyIcon color="primary" />
+          <Box>
+            <Typography variant="h6" fontWeight={700}>
+              Employee Portal Access & Credentials
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              Provision, reset passwords, and manage self-service portal permissions
+            </Typography>
+          </Box>
+        </DialogTitle>
+        <DialogContent dividers>
+          {selectedEmpForAccess && (
+            <Box component="form" onSubmit={handleSaveAccess} sx={{ display: "grid", gap: 2.5, pt: 1 }}>
+              {/* Employee Summary Card */}
+              <Box
+                sx={{
+                  p: 2,
+                  bgcolor: "action.hover",
+                  borderRadius: tokens.borderRadius.md,
+                  border: `1px solid ${tokens.colors.secondary[200]}`,
+                  display: "grid",
+                  gap: 1,
+                }}
+              >
+                <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <Typography variant="subtitle1" fontWeight={700}>
+                    {selectedEmpForAccess.firstName} {selectedEmpForAccess.lastName}
+                  </Typography>
+                  <Chip
+                    size="small"
+                    label={selectedEmpForAccess.hasLoginAccount ? "Login Active" : "No Account"}
+                    color={selectedEmpForAccess.hasLoginAccount ? "primary" : "default"}
+                    variant="outlined"
+                    sx={{ fontWeight: 600 }}
+                  />
+                </Box>
+                <Typography variant="body2" color="text.secondary">
+                  Code: <strong>{selectedEmpForAccess.employeeCode}</strong> | Email: <strong>{selectedEmpForAccess.email}</strong>
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Department: <strong>{selectedEmpForAccess.departmentName || "Unassigned"}</strong> | Designation: <strong>{selectedEmpForAccess.designationName || "Unassigned"}</strong>
+                </Typography>
+              </Box>
+
+              {/* Status Switch */}
+              <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", px: 1 }}>
+                <Box>
+                  <Typography variant="body1" fontWeight={600}>
+                    Portal & System Access
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Enable or disable the employee's active status and portal access
+                  </Typography>
+                </Box>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={accessEnabled}
+                      onChange={(e) => setAccessEnabled(e.target.checked)}
+                      color="primary"
+                    />
+                  }
+                  label={accessEnabled ? "Active" : "Disabled"}
+                  sx={{ m: 0 }}
+                />
+              </Box>
+
+              {/* Password Management */}
+              <Box sx={{ display: "grid", gap: 1 }}>
+                <Typography variant="body2" fontWeight={600}>
+                  {selectedEmpForAccess.hasLoginAccount ? "Reset Portal Password" : "Set Initial Portal Password"}
+                </Typography>
+                <TextField
+                  type="password"
+                  fullWidth
+                  size="small"
+                  label="Password"
+                  placeholder={
+                    selectedEmpForAccess.hasLoginAccount
+                      ? "Leave blank to keep current password"
+                      : "Enter a strong password (min 6 chars)"
+                  }
+                  value={accessPassword}
+                  onChange={(e) => setAccessPassword(e.target.value)}
+                  helperText={
+                    selectedEmpForAccess.hasLoginAccount
+                      ? "Provide a new password only if you wish to reset the employee's login credentials."
+                      : "Setting a password creates a new portal account linked to this employee's email."
+                  }
+                />
+              </Box>
+
+              {/* Resource Allocation & Scoping Notice */}
+              <Alert severity="info" sx={{ borderRadius: tokens.borderRadius.sm, fontSize: "0.85rem" }}>
+                <strong>Role & Scoping Note:</strong> Staff access permissions and departmental scoping (Own, Department, All) are governed centrally via the <strong>Roles & Permissions Matrix</strong> tab under System Users. Resource items (Assigned Tickets, Project Tasks) are linked directly to this employee profile.
+              </Alert>
+
+              <DialogActions sx={{ px: 0, pt: 1 }}>
+                <Button onClick={() => setAccessModalOpen(false)} color="inherit">
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  variant="contained"
+                  disabled={submittingAccess}
+                >
+                  {submittingAccess ? <CircularProgress size={20} /> : "Update Credentials & Access"}
+                </Button>
+              </DialogActions>
+            </Box>
+          )}
+        </DialogContent>
       </Dialog>
 
       {/* ==================== GLOBAL NOTIFICATION SNACKBAR ==================== */}

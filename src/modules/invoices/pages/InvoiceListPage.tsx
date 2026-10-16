@@ -233,9 +233,21 @@ export default function InvoiceListPage() {
     loadData();
   }, [page, rowsPerPage]);
 
-  const totalBilling = dashboardStats ? dashboardStats.totalAmount : invoices.reduce((sum, i) => sum + (i.totalAmount || 0), 0);
-  const totalPaid = dashboardStats ? dashboardStats.paidAmount : invoices.reduce((sum, i) => sum + (i.paidAmount || 0), 0);
-  const totalPending = dashboardStats ? dashboardStats.pendingAmount : invoices.reduce((sum, i) => sum + (i.pendingAmount || 0), 0);
+  const fallbackTotalBilling = invoices.reduce((sum, i) => sum + (i.totalAmount || 0), 0);
+  const fallbackTotalPaid = invoices.reduce((sum, i) => sum + (i.paidAmount || 0), 0);
+  const fallbackTotalPending = invoices.reduce((sum, i) => sum + (i.pendingAmount || 0), 0);
+
+  const totalBilling = dashboardStats && dashboardStats.totalAmount > 0
+    ? dashboardStats.totalAmount
+    : fallbackTotalBilling;
+
+  const totalPaid = dashboardStats && (dashboardStats.paidAmount > 0 || dashboardStats.totalAmount > 0)
+    ? dashboardStats.paidAmount
+    : fallbackTotalPaid;
+
+  const totalPending = dashboardStats && (dashboardStats.pendingAmount > 0 || dashboardStats.totalAmount > 0)
+    ? dashboardStats.pendingAmount
+    : fallbackTotalPending;
 
   const getStatusChip = (status: string) => {
     const st = (status || "").toUpperCase();
