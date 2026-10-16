@@ -25,6 +25,7 @@ import FileDownloadOutlinedIcon from "@mui/icons-material/FileDownloadOutlined";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import IconButton from "@mui/material/IconButton";
 import Tooltip from "@mui/material/Tooltip";
+import Checkbox from "@mui/material/Checkbox";
 import { PageLayout } from "@/shared/components/ui/layout";
 import { BrandLoader } from "@/shared/components/ui/feedback/BrandLoader";
 import { tokens } from "@/theme/tokens";
@@ -57,6 +58,8 @@ export default function AuditLogsPage() {
   const [page, setPage] = useState<number>(0);
   const [size, setSize] = useState<number>(20);
   const [totalElements, setTotalElements] = useState<number>(0);
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [deletingBatch, setDeletingBatch] = useState<boolean>(false);
 
   // Filters
   const [moduleFilter, setModuleFilter] = useState<string>("ALL");
@@ -115,18 +118,63 @@ export default function AuditLogsPage() {
         setLogs([]);
         setTotalElements(0);
       }
+      setSelectedIds(new Set());
     } catch {
       setError("Failed to load audit logs. Please try again.");
       setLogs([]);
+      setSelectedIds(new Set());
     } finally {
       setLoading(false);
     }
   }, [page, size, moduleFilter, actionFilter, statusFilter, searchQuery]);
 
+  const handleToggleSelect = (id: number) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const handleSelectAll = () => {
+    if (logs.length > 0 && selectedIds.size === logs.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(logs.map((l) => l.id)));
+    }
+  };
+
+  const handleDeleteBatch = async () => {
+    if (selectedIds.size === 0) return;
+    if (!window.confirm(`Are you sure you want to permanently delete the ${selectedIds.size} selected audit log records?`)) return;
+    setDeletingBatch(true);
+    try {
+      await http.post("/api/v1/audit/logs/batch-delete", {
+        ids: Array.from(selectedIds),
+      });
+      setSelectedIds(new Set());
+      fetchLogs();
+      fetchStats();
+    } catch {
+      alert("Failed to delete selected audit logs. Super Admin access required.");
+    } finally {
+      setDeletingBatch(false);
+    }
+  };
+
   const handleDeleteLog = async (id: number) => {
     if (!window.confirm("Are you sure you want to delete this audit record?")) return;
     try {
       await http.delete(`/api/v1/audit/logs/${id}`);
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
       fetchLogs();
       fetchStats();
     } catch {
@@ -138,6 +186,7 @@ export default function AuditLogsPage() {
     if (!window.confirm("WARNING: Are you sure you want to permanently clear all audit logs?")) return;
     try {
       await http.delete("/api/v1/audit/logs");
+      setSelectedIds(new Set());
       fetchLogs();
       fetchStats();
     } catch {
@@ -381,10 +430,60 @@ export default function AuditLogsPage() {
             overflow: "hidden",
           }}
         >
-          <TableContainer>
-            <Table>
+          {/* Selected Action Bar */}
+          {selectedIds.size > 0 && (
+            <Box
+              sx={{
+                display: "flex",
+                flexWrap: "wrap",
+                alignItems: "center",
+                justifyContent: "space-between",
+                bgcolor: "#fee2e2",
+                px: 2.5,
+                py: 1.5,
+                gap: 1.5,
+                borderBottom: `1px solid #fecaca`,
+              }}
+            >
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, color: "#991b1b" }}>
+                  {selectedIds.size} record{selectedIds.size > 1 ? "s" : ""} selected
+                </Typography>
+                <Button
+                  size="small"
+                  variant="text"
+                  onClick={() => setSelectedIds(new Set())}
+                  sx={{ color: "#991b1b", textTransform: "none", fontWeight: 600 }}
+                >
+                  Clear Selection
+                </Button>
+              </Box>
+              <Button
+                variant="contained"
+                color="error"
+                size="small"
+                startIcon={<DeleteOutlineIcon />}
+                onClick={handleDeleteBatch}
+                disabled={deletingBatch}
+                sx={{ fontWeight: 700, textTransform: "none" }}
+              >
+                {deletingBatch ? "Deleting..." : `Delete Selected (${selectedIds.size})`}
+              </Button>
+            </Box>
+          )}
+
+          <TableContainer sx={{ overflowX: "auto", width: "100%" }}>
+            <Table sx={{ minWidth: 850 }}>
               <TableHead sx={{ bgcolor: tokens.colors.secondary[50] }}>
                 <TableRow>
+                  <TableCell padding="checkbox" sx={{ width: 48, pl: 2 }}>
+                    <Checkbox
+                      size="small"
+                      checked={logs.length > 0 && selectedIds.size === logs.length}
+                      indeterminate={selectedIds.size > 0 && selectedIds.size < logs.length}
+                      onChange={handleSelectAll}
+                    />
+                  </TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>Timestamp</TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>User</TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>Action</TableCell>
@@ -392,68 +491,86 @@ export default function AuditLogsPage() {
                   <TableCell sx={{ fontWeight: 700 }}>Entity</TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>IP Address</TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>Status</TableCell>
-                  <TableCell sx={{ fontWeight: 700, textAlign: "right" }}>Actions</TableCell>
+                  <TableCell sx={{ fontWeight: 700, textAlign: "right", pr: 2 }}>Actions</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
-                {logs.map((l) => (
-                  <TableRow key={l.id} hover>
-                    <TableCell sx={{ fontSize: "0.8125rem", color: "text.secondary", whiteSpace: "nowrap" }}>
-                      {l.createdAt ? new Date(l.createdAt).toLocaleString() : "-"}
-                    </TableCell>
-                    <TableCell sx={{ fontWeight: 600, color: tokens.colors.secondary[900] }}>
-                      {l.username || (l.userId ? `User #${l.userId}` : "System")}
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        icon={<SecurityIcon style={{ fontSize: 13 }} />}
-                        label={l.action}
-                        size="small"
-                        color={getActionColor(l.action) as any}
-                        sx={{ fontWeight: 700, fontSize: "0.75rem" }}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={l.module}
-                        size="small"
-                        sx={{
-                          fontWeight: 700,
-                          fontSize: "0.72rem",
-                          bgcolor: tokens.colors.primary[50],
-                          color: tokens.colors.primary.main,
-                        }}
-                      />
-                    </TableCell>
-                    <TableCell sx={{ color: tokens.colors.secondary[800], fontSize: "0.8125rem" }}>
-                      {l.entityType || "SYSTEM"}
-                      {l.entityId ? ` #${l.entityId}` : ""}
-                    </TableCell>
-                    <TableCell sx={{ fontFamily: "monospace", fontSize: "0.8125rem", color: "text.secondary" }}>
-                      {l.ipAddress || "-"}
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={l.status || "SUCCESS"}
-                        size="small"
-                        color={String(l.status).toUpperCase() === "SUCCESS" ? "success" : "error"}
-                        sx={{ fontWeight: 700, fontSize: "0.72rem" }}
-                      />
-                    </TableCell>
-                    <TableCell sx={{ textAlign: "right" }}>
-                      <Tooltip title="Delete record (Super Admin)">
-                        <IconButton
+                {logs.map((l) => {
+                  const isSelected = selectedIds.has(l.id);
+                  return (
+                    <TableRow
+                      key={l.id}
+                      hover
+                      selected={isSelected}
+                      sx={{
+                        "&.Mui-selected": { bgcolor: "rgba(239, 68, 68, 0.08)" },
+                        "&.Mui-selected:hover": { bgcolor: "rgba(239, 68, 68, 0.12)" },
+                      }}
+                    >
+                      <TableCell padding="checkbox" sx={{ pl: 2 }}>
+                        <Checkbox
                           size="small"
-                          color="error"
-                          onClick={() => handleDeleteLog(l.id)}
-                          sx={{ p: 0.5 }}
-                        >
-                          <DeleteOutlineIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                          checked={isSelected}
+                          onChange={() => handleToggleSelect(l.id)}
+                        />
+                      </TableCell>
+                      <TableCell sx={{ fontSize: "0.8125rem", color: "text.secondary", whiteSpace: "nowrap" }}>
+                        {l.createdAt ? new Date(l.createdAt).toLocaleString() : "-"}
+                      </TableCell>
+                      <TableCell sx={{ fontWeight: 600, color: tokens.colors.secondary[900] }}>
+                        {l.username || (l.userId ? `User #${l.userId}` : "System")}
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          icon={<SecurityIcon style={{ fontSize: 13 }} />}
+                          label={l.action}
+                          size="small"
+                          color={getActionColor(l.action) as any}
+                          sx={{ fontWeight: 700, fontSize: "0.75rem" }}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={l.module}
+                          size="small"
+                          sx={{
+                            fontWeight: 700,
+                            fontSize: "0.72rem",
+                            bgcolor: tokens.colors.primary[50],
+                            color: tokens.colors.primary.main,
+                          }}
+                        />
+                      </TableCell>
+                      <TableCell sx={{ color: tokens.colors.secondary[800], fontSize: "0.8125rem" }}>
+                        {l.entityType || "SYSTEM"}
+                        {l.entityId ? ` #${l.entityId}` : ""}
+                      </TableCell>
+                      <TableCell sx={{ fontFamily: "monospace", fontSize: "0.8125rem", color: "text.secondary" }}>
+                        {l.ipAddress || "-"}
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={l.status || "SUCCESS"}
+                          size="small"
+                          color={String(l.status).toUpperCase() === "SUCCESS" ? "success" : "error"}
+                          sx={{ fontWeight: 700, fontSize: "0.72rem" }}
+                        />
+                      </TableCell>
+                      <TableCell sx={{ textAlign: "right", pr: 2 }}>
+                        <Tooltip title="Delete record (Super Admin)">
+                          <IconButton
+                            size="small"
+                            color="error"
+                            onClick={() => handleDeleteLog(l.id)}
+                            sx={{ p: 0.5 }}
+                          >
+                            <DeleteOutlineIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </TableContainer>

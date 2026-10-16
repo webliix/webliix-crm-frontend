@@ -24,6 +24,7 @@ import InputLabel from "@mui/material/InputLabel";
 import Select from "@mui/material/Select";
 import Switch from "@mui/material/Switch";
 import FormControlLabel from "@mui/material/FormControlLabel";
+import Checkbox from "@mui/material/Checkbox";
 import Tooltip from "@mui/material/Tooltip";
 import Alert from "@mui/material/Alert";
 import Snackbar from "@mui/material/Snackbar";
@@ -43,6 +44,11 @@ import CancelIcon from "@mui/icons-material/Cancel";
 import SearchIcon from "@mui/icons-material/Search";
 import RateReviewIcon from "@mui/icons-material/RateReview";
 import VpnKeyIcon from "@mui/icons-material/VpnKey";
+import EventAvailableIcon from "@mui/icons-material/EventAvailable";
+import FactCheckIcon from "@mui/icons-material/FactCheck";
+import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
+import ThumbUpIcon from "@mui/icons-material/ThumbUp";
+import ThumbDownIcon from "@mui/icons-material/ThumbDown";
 
 import { PageLayout } from "@/shared/components/ui/layout";
 import { BrandLoader } from "@/shared/components/ui/feedback/BrandLoader";
@@ -132,6 +138,77 @@ interface PaymentSubmissionItem {
   createdAt?: string;
 }
 
+interface AttendanceItem {
+  id: number;
+  employeeId: number;
+  employeeName: string;
+  employeeCode: string;
+  attendanceDate: string;
+  checkInTime?: string;
+  checkOutTime?: string;
+  status: string;
+  notes?: string;
+  workingHours?: number;
+}
+
+interface LeaveItem {
+  id: number;
+  employeeId: number;
+  employeeName: string;
+  employeeCode: string;
+  leaveType: string;
+  startDate: string;
+  endDate: string;
+  reason: string;
+  status: string;
+  totalDays?: number;
+  approvedBy?: string;
+  approvalNotes?: string;
+  createdAt: string;
+}
+
+interface LeaveBalanceItem {
+  id: number;
+  employeeId: number;
+  employeeName: string;
+  employeeCode: string;
+  leaveType: string;
+  year: number;
+  totalAllocated: number;
+  usedDays: number;
+  remainingDays: number;
+}
+
+interface RoleItem {
+  id: number;
+  name: string;
+  displayName?: string;
+  description?: string;
+}
+
+interface PermissionCatalogItem {
+  id: number;
+  code?: string;
+  name?: string;
+  module: string;
+  action: string;
+  description?: string;
+}
+
+interface UserOverrideItem {
+  id: number;
+  userId: number;
+  permission: {
+    id: number;
+    code?: string;
+    name?: string;
+    description?: string;
+    module?: string;
+  };
+  granted: boolean;
+  scope: string;
+}
+
 const statusColor = (status: string) => {
   switch (status?.toUpperCase()) {
     case "ACTIVE":
@@ -172,6 +249,49 @@ export default function EmployeeListPage() {
   const [payments, setPayments] = useState<PaymentSubmissionItem[]>([]);
   const [loadingPayments, setLoadingPayments] = useState(false);
   const [paymentStatusFilter, setPaymentStatusFilter] = useState("ALL");
+
+  // Tab 3: Attendance State
+  const [attendances, setAttendances] = useState<AttendanceItem[]>([]);
+  const [loadingAttendance, setLoadingAttendance] = useState(false);
+  const [attendanceDateFilter, setAttendanceDateFilter] = useState("");
+  const [markAttendanceModalOpen, setMarkAttendanceModalOpen] = useState(false);
+  const [submittingAttendance, setSubmittingAttendance] = useState(false);
+  const [attendanceFormData, setAttendanceFormData] = useState({
+    employeeId: "" as number | string,
+    attendanceDate: new Date().toISOString().split("T")[0],
+    checkInTime: "",
+    checkOutTime: "",
+    status: "PRESENT",
+    notes: "",
+  });
+
+  // Tab 4: Leaves State
+  const [leaves, setLeaves] = useState<LeaveItem[]>([]);
+  const [loadingLeaves, setLoadingLeaves] = useState(false);
+  const [leaveStatusFilter, setLeaveStatusFilter] = useState("ALL");
+  const [leaveBalances, setLeaveBalances] = useState<LeaveBalanceItem[]>([]);
+  const [loadingBalances, setLoadingBalances] = useState(false);
+  const [quotaModalOpen, setQuotaModalOpen] = useState(false);
+  const [submittingQuota, setSubmittingQuota] = useState(false);
+  const [quotaFormData, setQuotaFormData] = useState({
+    employeeId: "" as number | string,
+    leaveType: "CASUAL",
+    year: new Date().getFullYear(),
+    totalAllocated: 12,
+  });
+
+  // Permissions & Roles Modal State
+  const [permsModalOpen, setPermsModalOpen] = useState(false);
+  const [selectedEmpForPerms, setSelectedEmpForPerms] = useState<EmployeeItem | null>(null);
+  const [allRoles, setAllRoles] = useState<RoleItem[]>([]);
+  const [selectedRoleNames, setSelectedRoleNames] = useState<string[]>([]);
+  const [permissionCatalog, setPermissionCatalog] = useState<Record<string, PermissionCatalogItem[]>>({});
+  const [userOverrides, setUserOverrides] = useState<UserOverrideItem[]>([]);
+  const [loadingPermsData, setLoadingPermsData] = useState(false);
+  const [savingRoles, setSavingRoles] = useState(false);
+  const [overridePermId, setOverridePermId] = useState<number | string>("");
+  const [overrideScope, setOverrideScope] = useState<string>("ALL");
+  const [savingOverride, setSavingOverride] = useState(false);
 
   // Shared Modal & Alert State
   const [notification, setNotification] = useState<{ message: string; severity: "success" | "error" } | null>(null);
@@ -289,6 +409,202 @@ export default function EmployeeListPage() {
     }
   };
 
+  const loadAttendance = async () => {
+    setLoadingAttendance(true);
+    try {
+      const res = await http.get("/api/v1/attendance", { params: { page: 0, size: 100 } });
+      const data = res.data?.data?.content || res.data?.data || [];
+      setAttendances(Array.isArray(data) ? data : []);
+    } catch {
+      setNotification({ message: "Failed to load attendance records", severity: "error" });
+      setAttendances([]);
+    } finally {
+      setLoadingAttendance(false);
+    }
+  };
+
+  const loadLeaves = async () => {
+    setLoadingLeaves(true);
+    setLoadingBalances(true);
+    try {
+      const [leavesRes, balRes] = await Promise.allSettled([
+        http.get("/api/v1/leaves", { params: { page: 0, size: 100 } }),
+        http.get("/api/v1/leaves/balances", { params: { page: 0, size: 100 } }),
+      ]);
+      if (leavesRes.status === "fulfilled") {
+        const d = leavesRes.value.data?.data?.content || leavesRes.value.data?.data || [];
+        setLeaves(Array.isArray(d) ? d : []);
+      }
+      if (balRes.status === "fulfilled") {
+        const b = balRes.value.data?.data?.content || balRes.value.data?.data || [];
+        setLeaveBalances(Array.isArray(b) ? b : []);
+      }
+    } catch {
+      setNotification({ message: "Failed to load leave requests", severity: "error" });
+      setLeaves([]);
+    } finally {
+      setLoadingLeaves(false);
+      setLoadingBalances(false);
+    }
+  };
+
+  const handleApproveLeave = async (id: number) => {
+    try {
+      await http.put(`/api/v1/leaves/${id}/approve`);
+      setNotification({ message: "Leave request approved successfully!", severity: "success" });
+      loadLeaves();
+    } catch (err: any) {
+      setNotification({ message: err.response?.data?.message || "Failed to approve leave", severity: "error" });
+    }
+  };
+
+  const handleRejectLeave = async (id: number) => {
+    try {
+      await http.put(`/api/v1/leaves/${id}/reject`);
+      setNotification({ message: "Leave request rejected.", severity: "success" });
+      loadLeaves();
+    } catch (err: any) {
+      setNotification({ message: err.response?.data?.message || "Failed to reject leave", severity: "error" });
+    }
+  };
+
+  const handleSaveAttendance = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!attendanceFormData.employeeId) {
+      setNotification({ message: "Please select an employee", severity: "error" });
+      return;
+    }
+    setSubmittingAttendance(true);
+    try {
+      await http.post("/api/v1/attendance", {
+        employeeId: Number(attendanceFormData.employeeId),
+        attendanceDate: attendanceFormData.attendanceDate,
+        checkInTime: attendanceFormData.checkInTime ? `${attendanceFormData.attendanceDate}T${attendanceFormData.checkInTime}:00` : null,
+        checkOutTime: attendanceFormData.checkOutTime ? `${attendanceFormData.attendanceDate}T${attendanceFormData.checkOutTime}:00` : null,
+        status: attendanceFormData.status,
+        notes: attendanceFormData.notes,
+      });
+      setNotification({ message: "Attendance record saved successfully!", severity: "success" });
+      setMarkAttendanceModalOpen(false);
+      loadAttendance();
+    } catch (err: any) {
+      setNotification({ message: err.response?.data?.message || "Failed to record attendance", severity: "error" });
+    } finally {
+      setSubmittingAttendance(false);
+    }
+  };
+
+  const handleSaveQuota = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!quotaFormData.employeeId) {
+      setNotification({ message: "Please select an employee", severity: "error" });
+      return;
+    }
+    setSubmittingQuota(true);
+    try {
+      await http.post("/api/v1/leaves/balances", {
+        employeeId: Number(quotaFormData.employeeId),
+        leaveType: quotaFormData.leaveType,
+        year: Number(quotaFormData.year),
+        totalAllocated: Number(quotaFormData.totalAllocated),
+      });
+      setNotification({ message: "Leave balance quota allocated successfully!", severity: "success" });
+      setQuotaModalOpen(false);
+      loadLeaves();
+    } catch (err: any) {
+      setNotification({ message: err.response?.data?.message || "Failed to allocate leave quota", severity: "error" });
+    } finally {
+      setSubmittingQuota(false);
+    }
+  };
+
+  const handleOpenPermissionsModal = async (emp: EmployeeItem) => {
+    setSelectedEmpForPerms(emp);
+    setPermsModalOpen(true);
+    setLoadingPermsData(true);
+    try {
+      const [rolesRes, permsRes] = await Promise.all([
+        http.get("/api/v1/admin/roles"),
+        http.get("/api/v1/admin/permissions"),
+      ]);
+      setAllRoles(rolesRes.data?.data || []);
+      setPermissionCatalog(permsRes.data?.data || {});
+
+      if (emp.userId) {
+        try {
+          const userRes = await http.get(`/api/v1/users/${emp.userId}`);
+          const uRoles = userRes.data?.data?.roles || [];
+          setSelectedRoleNames(uRoles);
+        } catch {
+          setSelectedRoleNames(["EMPLOYEE"]);
+        }
+
+        try {
+          const overridesRes = await http.get(`/api/v1/users/${emp.userId}/permission-overrides`);
+          setUserOverrides(overridesRes.data?.data || []);
+        } catch {
+          setUserOverrides([]);
+        }
+      } else {
+        setSelectedRoleNames(["EMPLOYEE"]);
+        setUserOverrides([]);
+      }
+    } catch (err) {
+      console.error("Failed to load permissions catalog", err);
+    } finally {
+      setLoadingPermsData(false);
+    }
+  };
+
+  const handleSaveUserRoles = async () => {
+    if (!selectedEmpForPerms?.userId) {
+      setNotification({ message: "This employee does not have a linked user login account yet. Set credentials first.", severity: "error" });
+      return;
+    }
+    setSavingRoles(true);
+    try {
+      await http.put(`/api/v1/users/${selectedEmpForPerms.userId}/roles`, {
+        roles: selectedRoleNames,
+      });
+      setNotification({ message: `Updated roles for ${selectedEmpForPerms.firstName} successfully!`, severity: "success" });
+    } catch (err: any) {
+      setNotification({ message: err.response?.data?.message || "Failed to update roles", severity: "error" });
+    } finally {
+      setSavingRoles(false);
+    }
+  };
+
+  const handleAddOverride = async () => {
+    if (!selectedEmpForPerms?.userId || !overridePermId) return;
+    setSavingOverride(true);
+    try {
+      await http.put(`/api/v1/users/${selectedEmpForPerms.userId}/permission-overrides`, {
+        permissionId: Number(overridePermId),
+        granted: true,
+        scope: overrideScope,
+      });
+      setNotification({ message: "Permission grant saved successfully!", severity: "success" });
+      const overridesRes = await http.get(`/api/v1/users/${selectedEmpForPerms.userId}/permission-overrides`);
+      setUserOverrides(overridesRes.data?.data || []);
+      setOverridePermId("");
+    } catch (err: any) {
+      setNotification({ message: err.response?.data?.message || "Failed to grant permission", severity: "error" });
+    } finally {
+      setSavingOverride(false);
+    }
+  };
+
+  const handleDeleteOverride = async (permissionId: number) => {
+    if (!selectedEmpForPerms?.userId) return;
+    try {
+      await http.delete(`/api/v1/users/${selectedEmpForPerms.userId}/permission-overrides/${permissionId}`);
+      setNotification({ message: "Permission override removed.", severity: "success" });
+      setUserOverrides((prev) => prev.filter((o) => o.permission?.id !== permissionId));
+    } catch (err: any) {
+      setNotification({ message: err.response?.data?.message || "Failed to delete override", severity: "error" });
+    }
+  };
+
   useEffect(() => {
     loadEmployees();
   }, []);
@@ -297,6 +613,8 @@ export default function EmployeeListPage() {
     setCurrentTab(newValue);
     if (newValue === 1) loadWorkLogs();
     if (newValue === 2) loadPayments();
+    if (newValue === 3) loadAttendance();
+    if (newValue === 4) loadLeaves();
   };
 
   // Open Create Modal
@@ -592,6 +910,42 @@ export default function EmployeeListPage() {
           >
             Add New Employee
           </Button>
+        ) : currentTab === 3 ? (
+          <Button
+            variant="contained"
+            startIcon={<EventAvailableIcon />}
+            onClick={() => {
+              setAttendanceFormData({
+                employeeId: employees[0]?.id || "",
+                attendanceDate: new Date().toISOString().split("T")[0],
+                checkInTime: "09:00",
+                checkOutTime: "18:00",
+                status: "PRESENT",
+                notes: "",
+              });
+              setMarkAttendanceModalOpen(true);
+            }}
+            sx={{ fontWeight: 700 }}
+          >
+            Mark / Adjust Attendance
+          </Button>
+        ) : currentTab === 4 ? (
+          <Button
+            variant="contained"
+            startIcon={<FactCheckIcon />}
+            onClick={() => {
+              setQuotaFormData({
+                employeeId: employees[0]?.id || "",
+                leaveType: "CASUAL",
+                year: new Date().getFullYear(),
+                totalAllocated: 12,
+              });
+              setQuotaModalOpen(true);
+            }}
+            sx={{ fontWeight: 700 }}
+          >
+            Configure Leave Quotas
+          </Button>
         ) : undefined
       }
     >
@@ -624,6 +978,18 @@ export default function EmployeeListPage() {
           <Tab
             label="Payment Collections"
             icon={<PaymentsIcon />}
+            iconPosition="start"
+            sx={{ fontWeight: 700, minHeight: 48 }}
+          />
+          <Tab
+            label="Attendance Management"
+            icon={<EventAvailableIcon />}
+            iconPosition="start"
+            sx={{ fontWeight: 700, minHeight: 48 }}
+          />
+          <Tab
+            label="Leave Requests & Quotas"
+            icon={<FactCheckIcon />}
             iconPosition="start"
             sx={{ fontWeight: 700, minHeight: 48 }}
           />
@@ -772,6 +1138,11 @@ export default function EmployeeListPage() {
                           />
                         </TableCell>
                         <TableCell sx={{ textAlign: "right" }}>
+                          <Tooltip title="Manage Roles & Permissions">
+                            <IconButton size="small" onClick={() => handleOpenPermissionsModal(e)} sx={{ color: tokens.colors.primary.main }}>
+                              <AdminPanelSettingsIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
                           <Tooltip title="Manage Access & Credentials">
                             <IconButton size="small" onClick={() => handleOpenAccessModal(e)} color="info">
                               <VpnKeyIcon fontSize="small" />
@@ -1086,6 +1457,320 @@ export default function EmployeeListPage() {
                           >
                             Review
                           </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </Card>
+          )}
+        </Box>
+      )}
+
+      {/* ==================== TAB 3: ATTENDANCE MANAGEMENT ==================== */}
+      {currentTab === 3 && (
+        <Box sx={{ display: "grid", gap: 3 }}>
+          {/* Header & Date Filter */}
+          <Box sx={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: 2 }}>
+            <Box>
+              <Typography variant="h6" fontWeight={700}>
+                Staff Attendance & Work Hours
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                View employee clock-in records, track shift hours, and record or adjust attendance manually
+              </Typography>
+            </Box>
+            <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2, alignItems: "center" }}>
+              <TextField
+                type="date"
+                size="small"
+                label="Filter by Date"
+                InputLabelProps={{ shrink: true }}
+                value={attendanceDateFilter}
+                onChange={(e) => setAttendanceDateFilter(e.target.value)}
+                sx={{ minWidth: 160 }}
+              />
+              {attendanceDateFilter && (
+                <Button size="small" variant="text" onClick={() => setAttendanceDateFilter("")}>
+                  Clear Date
+                </Button>
+              )}
+              <Button size="small" variant="outlined" onClick={loadAttendance}>
+                Refresh
+              </Button>
+            </Box>
+          </Box>
+
+          {/* Attendance Table */}
+          {loadingAttendance ? (
+            <Box sx={{ py: 6, textAlign: "center" }}>
+              <BrandLoader message="Fetching attendance records..." size="medium" />
+            </Box>
+          ) : (
+            <Card
+              sx={{
+                borderRadius: tokens.borderRadius.lg,
+                border: `1px solid ${tokens.colors.secondary[200]}`,
+                overflow: "hidden",
+              }}
+            >
+              <TableContainer sx={{ overflowX: "auto", width: "100%" }}>
+                <Table sx={{ minWidth: 800 }}>
+                  <TableHead sx={{ bgcolor: tokens.colors.secondary[50] }}>
+                    <TableRow>
+                      <TableCell sx={{ fontWeight: 700 }}>Date</TableCell>
+                      <TableCell sx={{ fontWeight: 700 }}>Employee</TableCell>
+                      <TableCell sx={{ fontWeight: 700 }}>Check-In Time</TableCell>
+                      <TableCell sx={{ fontWeight: 700 }}>Check-Out Time</TableCell>
+                      <TableCell sx={{ fontWeight: 700 }}>Total Hours</TableCell>
+                      <TableCell sx={{ fontWeight: 700 }}>Status</TableCell>
+                      <TableCell sx={{ fontWeight: 700 }}>Notes / Remarks</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {attendances
+                      .filter((a) => !attendanceDateFilter || (a.attendanceDate && a.attendanceDate.startsWith(attendanceDateFilter)))
+                      .length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={7} sx={{ textAlign: "center", py: 5, color: "text.secondary" }}>
+                          No attendance records found for this period. Use "Mark / Adjust Attendance" to record.
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      attendances
+                        .filter((a) => !attendanceDateFilter || (a.attendanceDate && a.attendanceDate.startsWith(attendanceDateFilter)))
+                        .map((att) => (
+                          <TableRow key={att.id} hover>
+                            <TableCell sx={{ fontWeight: 600 }}>
+                              {att.attendanceDate ? new Date(att.attendanceDate).toLocaleDateString() : "—"}
+                            </TableCell>
+                            <TableCell>
+                              <Typography variant="body2" fontWeight={700}>
+                                {att.employeeName || `Employee #${att.employeeId}`}
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                {att.employeeCode || "—"}
+                              </Typography>
+                            </TableCell>
+                            <TableCell>
+                              {att.checkInTime ? new Date(att.checkInTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "—"}
+                            </TableCell>
+                            <TableCell>
+                              {att.checkOutTime ? new Date(att.checkOutTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "—"}
+                            </TableCell>
+                            <TableCell sx={{ fontWeight: 700 }}>
+                              {att.workingHours != null ? `${att.workingHours.toFixed(2)} hrs` : "—"}
+                            </TableCell>
+                            <TableCell>
+                              <Chip
+                                label={att.status || "PRESENT"}
+                                color={statusColor(att.status) as any}
+                                size="small"
+                                sx={{ fontWeight: 700 }}
+                              />
+                            </TableCell>
+                            <TableCell sx={{ color: "text.secondary", maxWidth: 200, fontSize: "0.8125rem" }}>
+                              {att.notes || "—"}
+                            </TableCell>
+                          </TableRow>
+                        ))
+                    )}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </Card>
+          )}
+        </Box>
+      )}
+
+      {/* ==================== TAB 4: LEAVE REQUESTS & QUOTAS ==================== */}
+      {currentTab === 4 && (
+        <Box sx={{ display: "grid", gap: 3 }}>
+          {/* Header & Status Filter */}
+          <Box sx={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: 2 }}>
+            <Box>
+              <Typography variant="h6" fontWeight={700}>
+                Leave Requests & Vacation Approvals
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Review absence requests from staff, grant 1-click approvals or rejections, and monitor leave balances
+              </Typography>
+            </Box>
+            <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
+              <FormControl size="small" sx={{ minWidth: 160 }}>
+                <InputLabel>Status Filter</InputLabel>
+                <Select
+                  value={leaveStatusFilter}
+                  label="Status Filter"
+                  onChange={(e) => setLeaveStatusFilter(e.target.value)}
+                >
+                  <MenuItem value="ALL">All Statuses</MenuItem>
+                  <MenuItem value="PENDING">Pending Review</MenuItem>
+                  <MenuItem value="APPROVED">Approved</MenuItem>
+                  <MenuItem value="REJECTED">Rejected</MenuItem>
+                </Select>
+              </FormControl>
+              <Button size="small" variant="outlined" onClick={loadLeaves}>
+                Refresh
+              </Button>
+            </Box>
+          </Box>
+
+          {/* Leave Requests Table */}
+          {loadingLeaves ? (
+            <Box sx={{ py: 6, textAlign: "center" }}>
+              <BrandLoader message="Fetching leave requests..." size="medium" />
+            </Box>
+          ) : (
+            <Card
+              sx={{
+                borderRadius: tokens.borderRadius.lg,
+                border: `1px solid ${tokens.colors.secondary[200]}`,
+                overflow: "hidden",
+              }}
+            >
+              <TableContainer sx={{ overflowX: "auto", width: "100%" }}>
+                <Table sx={{ minWidth: 850 }}>
+                  <TableHead sx={{ bgcolor: tokens.colors.secondary[50] }}>
+                    <TableRow>
+                      <TableCell sx={{ fontWeight: 700 }}>Employee</TableCell>
+                      <TableCell sx={{ fontWeight: 700 }}>Leave Type</TableCell>
+                      <TableCell sx={{ fontWeight: 700 }}>Start Date</TableCell>
+                      <TableCell sx={{ fontWeight: 700 }}>End Date</TableCell>
+                      <TableCell sx={{ fontWeight: 700 }}>Reason / Purpose</TableCell>
+                      <TableCell sx={{ fontWeight: 700 }}>Status</TableCell>
+                      <TableCell sx={{ fontWeight: 700 }}>Review Notes</TableCell>
+                      <TableCell sx={{ fontWeight: 700, textAlign: "right" }}>Actions</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {leaves
+                      .filter((l) => leaveStatusFilter === "ALL" || l.status?.toUpperCase() === leaveStatusFilter)
+                      .length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={8} sx={{ textAlign: "center", py: 5, color: "text.secondary" }}>
+                          No leave applications found matching current filter.
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      leaves
+                        .filter((l) => leaveStatusFilter === "ALL" || l.status?.toUpperCase() === leaveStatusFilter)
+                        .map((l) => (
+                          <TableRow key={l.id} hover>
+                            <TableCell>
+                              <Typography variant="body2" fontWeight={700}>
+                                {l.employeeName || `Employee #${l.employeeId}`}
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                {l.employeeCode || "—"}
+                              </Typography>
+                            </TableCell>
+                            <TableCell>
+                              <Chip
+                                label={l.leaveType}
+                                size="small"
+                                sx={{
+                                  fontWeight: 700,
+                                  bgcolor: tokens.colors.primary[50],
+                                  color: tokens.colors.primary.main,
+                                }}
+                              />
+                            </TableCell>
+                            <TableCell sx={{ whiteSpace: "nowrap" }}>
+                              {l.startDate ? new Date(l.startDate).toLocaleDateString() : "—"}
+                            </TableCell>
+                            <TableCell sx={{ whiteSpace: "nowrap" }}>
+                              {l.endDate ? new Date(l.endDate).toLocaleDateString() : "—"}
+                            </TableCell>
+                            <TableCell sx={{ maxWidth: 220, wordBreak: "break-word" }}>
+                              {l.reason || "—"}
+                            </TableCell>
+                            <TableCell>
+                              <Chip
+                                label={l.status}
+                                color={statusColor(l.status) as any}
+                                size="small"
+                                sx={{ fontWeight: 700 }}
+                              />
+                            </TableCell>
+                            <TableCell sx={{ color: "text.secondary", fontSize: "0.8125rem" }}>
+                              {l.approvalNotes || "—"}
+                            </TableCell>
+                            <TableCell sx={{ textAlign: "right", whiteSpace: "nowrap" }}>
+                              {l.status === "PENDING" ? (
+                                <Box sx={{ display: "flex", gap: 1, justifyContent: "flex-end" }}>
+                                  <Button
+                                    size="small"
+                                    variant="contained"
+                                    color="success"
+                                    startIcon={<ThumbUpIcon />}
+                                    onClick={() => handleApproveLeave(l.id)}
+                                    sx={{ fontWeight: 700, textTransform: "none" }}
+                                  >
+                                    Approve
+                                  </Button>
+                                  <Button
+                                    size="small"
+                                    variant="outlined"
+                                    color="error"
+                                    startIcon={<ThumbDownIcon />}
+                                    onClick={() => handleRejectLeave(l.id)}
+                                    sx={{ fontWeight: 700, textTransform: "none" }}
+                                  >
+                                    Reject
+                                  </Button>
+                                </Box>
+                              ) : (
+                                <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                                  Completed
+                                </Typography>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        ))
+                    )}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </Card>
+          )}
+
+          {/* Leave Quota Balances Summary */}
+          {!loadingBalances && leaveBalances.length > 0 && (
+            <Card
+              sx={{
+                borderRadius: tokens.borderRadius.lg,
+                border: `1px solid ${tokens.colors.secondary[200]}`,
+                p: 3,
+                mt: 1,
+              }}
+            >
+              <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 2 }}>
+                Configured Staff Leave Quotas & Allocation
+              </Typography>
+              <TableContainer sx={{ overflowX: "auto" }}>
+                <Table size="small">
+                  <TableHead sx={{ bgcolor: tokens.colors.secondary[50] }}>
+                    <TableRow>
+                      <TableCell sx={{ fontWeight: 700 }}>Employee</TableCell>
+                      <TableCell sx={{ fontWeight: 700 }}>Leave Category</TableCell>
+                      <TableCell sx={{ fontWeight: 700 }}>Year</TableCell>
+                      <TableCell sx={{ fontWeight: 700 }}>Allocated</TableCell>
+                      <TableCell sx={{ fontWeight: 700 }}>Used Days</TableCell>
+                      <TableCell sx={{ fontWeight: 700 }}>Remaining Days</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {leaveBalances.map((b) => (
+                      <TableRow key={b.id} hover>
+                        <TableCell sx={{ fontWeight: 600 }}>{b.employeeName || `#${b.employeeId}`}</TableCell>
+                        <TableCell>{b.leaveType}</TableCell>
+                        <TableCell>{b.year}</TableCell>
+                        <TableCell sx={{ fontWeight: 700 }}>{b.totalAllocated} days</TableCell>
+                        <TableCell sx={{ color: "text.secondary" }}>{b.usedDays} days</TableCell>
+                        <TableCell sx={{ fontWeight: 800, color: tokens.colors.primary.main }}>
+                          {b.remainingDays} days
                         </TableCell>
                       </TableRow>
                     ))}
@@ -1583,6 +2268,440 @@ export default function EmployeeListPage() {
             </Box>
           )}
         </DialogContent>
+      </Dialog>
+
+      {/* ==================== MARK / ADJUST ATTENDANCE DIALOG ==================== */}
+      <Dialog
+        open={markAttendanceModalOpen}
+        onClose={() => setMarkAttendanceModalOpen(false)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{ sx: { borderRadius: tokens.borderRadius.lg } }}
+      >
+        <DialogTitle sx={{ display: "flex", alignItems: "center", gap: 1.5, pb: 1 }}>
+          <EventAvailableIcon color="primary" />
+          <Box>
+            <Typography variant="h6" fontWeight={700}>
+              Mark / Adjust Attendance
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              Record daily employee punch-in or adjust attendance status
+            </Typography>
+          </Box>
+        </DialogTitle>
+        <DialogContent dividers>
+          <Box component="form" onSubmit={handleSaveAttendance} sx={{ display: "grid", gap: 2.5, pt: 1 }}>
+            <FormControl fullWidth size="small" required>
+              <InputLabel>Select Employee</InputLabel>
+              <Select
+                value={attendanceFormData.employeeId}
+                label="Select Employee"
+                onChange={(e) => setAttendanceFormData({ ...attendanceFormData, employeeId: e.target.value })}
+              >
+                {employees.map((emp) => (
+                  <MenuItem key={emp.id} value={emp.id}>
+                    {emp.firstName} {emp.lastName} ({emp.employeeCode})
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 2 }}>
+              <TextField
+                label="Attendance Date"
+                type="date"
+                size="small"
+                fullWidth
+                required
+                InputLabelProps={{ shrink: true }}
+                value={attendanceFormData.attendanceDate}
+                onChange={(e) => setAttendanceFormData({ ...attendanceFormData, attendanceDate: e.target.value })}
+              />
+              <FormControl fullWidth size="small">
+                <InputLabel>Status</InputLabel>
+                <Select
+                  value={attendanceFormData.status}
+                  label="Status"
+                  onChange={(e) => setAttendanceFormData({ ...attendanceFormData, status: e.target.value })}
+                >
+                  <MenuItem value="PRESENT">PRESENT</MenuItem>
+                  <MenuItem value="ABSENT">ABSENT</MenuItem>
+                  <MenuItem value="HALF_DAY">HALF DAY</MenuItem>
+                  <MenuItem value="ON_LEAVE">ON LEAVE</MenuItem>
+                  <MenuItem value="LATE">LATE</MenuItem>
+                </Select>
+              </FormControl>
+            </Box>
+
+            <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 2 }}>
+              <TextField
+                label="Check-In Time"
+                type="time"
+                size="small"
+                fullWidth
+                InputLabelProps={{ shrink: true }}
+                value={attendanceFormData.checkInTime}
+                onChange={(e) => setAttendanceFormData({ ...attendanceFormData, checkInTime: e.target.value })}
+              />
+              <TextField
+                label="Check-Out Time"
+                type="time"
+                size="small"
+                fullWidth
+                InputLabelProps={{ shrink: true }}
+                value={attendanceFormData.checkOutTime}
+                onChange={(e) => setAttendanceFormData({ ...attendanceFormData, checkOutTime: e.target.value })}
+              />
+            </Box>
+
+            <TextField
+              label="Notes / Justification"
+              multiline
+              rows={2}
+              fullWidth
+              size="small"
+              placeholder="e.g. Approved remote work, manual override, late transit"
+              value={attendanceFormData.notes}
+              onChange={(e) => setAttendanceFormData({ ...attendanceFormData, notes: e.target.value })}
+            />
+
+            <DialogActions sx={{ px: 0, pt: 1 }}>
+              <Button onClick={() => setMarkAttendanceModalOpen(false)} color="inherit">
+                Cancel
+              </Button>
+              <Button type="submit" variant="contained" disabled={submittingAttendance}>
+                {submittingAttendance ? <CircularProgress size={20} /> : "Save Attendance"}
+              </Button>
+            </DialogActions>
+          </Box>
+        </DialogContent>
+      </Dialog>
+
+      {/* ==================== CONFIGURE LEAVE QUOTA DIALOG ==================== */}
+      <Dialog
+        open={quotaModalOpen}
+        onClose={() => setQuotaModalOpen(false)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{ sx: { borderRadius: tokens.borderRadius.lg } }}
+      >
+        <DialogTitle sx={{ display: "flex", alignItems: "center", gap: 1.5, pb: 1 }}>
+          <FactCheckIcon color="primary" />
+          <Box>
+            <Typography variant="h6" fontWeight={700}>
+              Configure Leave Quota
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              Allocate annual leave allowances for employees
+            </Typography>
+          </Box>
+        </DialogTitle>
+        <DialogContent dividers>
+          <Box component="form" onSubmit={handleSaveQuota} sx={{ display: "grid", gap: 2.5, pt: 1 }}>
+            <FormControl fullWidth size="small" required>
+              <InputLabel>Select Employee</InputLabel>
+              <Select
+                value={quotaFormData.employeeId}
+                label="Select Employee"
+                onChange={(e) => setQuotaFormData({ ...quotaFormData, employeeId: e.target.value })}
+              >
+                {employees.map((emp) => (
+                  <MenuItem key={emp.id} value={emp.id}>
+                    {emp.firstName} {emp.lastName} ({emp.employeeCode})
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 2 }}>
+              <FormControl fullWidth size="small">
+                <InputLabel>Leave Type</InputLabel>
+                <Select
+                  value={quotaFormData.leaveType}
+                  label="Leave Type"
+                  onChange={(e) => setQuotaFormData({ ...quotaFormData, leaveType: e.target.value })}
+                >
+                  <MenuItem value="CASUAL">Casual Leave</MenuItem>
+                  <MenuItem value="SICK">Sick Leave</MenuItem>
+                  <MenuItem value="ANNUAL">Annual Leave</MenuItem>
+                  <MenuItem value="MATERNITY">Maternity Leave</MenuItem>
+                  <MenuItem value="UNPAID">Unpaid Leave</MenuItem>
+                  <MenuItem value="OTHER">Other</MenuItem>
+                </Select>
+              </FormControl>
+
+              <TextField
+                label="Year"
+                type="number"
+                size="small"
+                fullWidth
+                required
+                value={quotaFormData.year}
+                onChange={(e) => setQuotaFormData({ ...quotaFormData, year: Number(e.target.value) })}
+              />
+            </Box>
+
+            <TextField
+              label="Allocated Days"
+              type="number"
+              size="small"
+              fullWidth
+              required
+              inputProps={{ min: 0, step: 0.5 }}
+              value={quotaFormData.totalAllocated}
+              onChange={(e) => setQuotaFormData({ ...quotaFormData, totalAllocated: Number(e.target.value) })}
+              helperText="Annual quota credited for this leave category"
+            />
+
+            <DialogActions sx={{ px: 0, pt: 1 }}>
+              <Button onClick={() => setQuotaModalOpen(false)} color="inherit">
+                Cancel
+              </Button>
+              <Button type="submit" variant="contained" disabled={submittingQuota}>
+                {submittingQuota ? <CircularProgress size={20} /> : "Save Quota"}
+              </Button>
+            </DialogActions>
+          </Box>
+        </DialogContent>
+      </Dialog>
+
+      {/* ==================== MANAGE ROLES & PERMISSIONS DIALOG ==================== */}
+      <Dialog
+        open={permsModalOpen}
+        onClose={() => setPermsModalOpen(false)}
+        maxWidth="md"
+        fullWidth
+        PaperProps={{ sx: { borderRadius: tokens.borderRadius.lg } }}
+      >
+        <DialogTitle sx={{ display: "flex", alignItems: "center", gap: 1.5, pb: 1 }}>
+          <AdminPanelSettingsIcon color="primary" />
+          <Box>
+            <Typography variant="h6" fontWeight={700}>
+              Employee Permissions & Roles Management
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              Configure system roles, access scoping, and granular capability overrides
+            </Typography>
+          </Box>
+        </DialogTitle>
+        <DialogContent dividers>
+          {loadingPermsData ? (
+            <Box sx={{ display: "flex", justifyContent: "center", py: 6 }}>
+              <CircularProgress />
+            </Box>
+          ) : selectedEmpForPerms ? (
+            <Box sx={{ display: "grid", gap: 3, pt: 1 }}>
+              {/* Employee Summary Card */}
+              <Box
+                sx={{
+                  p: 2,
+                  bgcolor: "action.hover",
+                  borderRadius: tokens.borderRadius.md,
+                  border: `1px solid ${tokens.colors.secondary[200]}`,
+                  display: "flex",
+                  flexWrap: "wrap",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 1.5,
+                }}
+              >
+                <Box>
+                  <Typography variant="subtitle1" fontWeight={700}>
+                    {selectedEmpForPerms.firstName} {selectedEmpForPerms.lastName}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {selectedEmpForPerms.employeeCode} &bull; {selectedEmpForPerms.email} &bull; {selectedEmpForPerms.departmentName || "General Staff"}
+                  </Typography>
+                </Box>
+                <Chip
+                  size="small"
+                  label={selectedEmpForPerms.userId ? `User ID #${selectedEmpForPerms.userId}` : "No Login Profile"}
+                  color={selectedEmpForPerms.userId ? "primary" : "warning"}
+                  variant="outlined"
+                />
+              </Box>
+
+              {!selectedEmpForPerms.userId && (
+                <Alert severity="warning">
+                  This employee does not have a linked user account. Please open the "Portal Access" key icon in the directory to set credentials before roles and overrides can take effect.
+                </Alert>
+              )}
+
+              {/* Roles Multi-Select Card */}
+              <Card variant="outlined" sx={{ p: 2.5, borderRadius: tokens.borderRadius.md }}>
+                <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1.5 }}>
+                  <Box>
+                    <Typography variant="subtitle1" fontWeight={700}>
+                      Assigned System Roles
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      Roles assign grouped bundles of permissions automatically
+                    </Typography>
+                  </Box>
+                  <Button
+                    variant="contained"
+                    size="small"
+                    disabled={!selectedEmpForPerms.userId || savingRoles}
+                    onClick={handleSaveUserRoles}
+                  >
+                    {savingRoles ? <CircularProgress size={16} /> : "Save Roles"}
+                  </Button>
+                </Box>
+                <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1.5 }}>
+                  {allRoles.map((role) => {
+                    const isChecked = selectedRoleNames.includes(role.name);
+                    return (
+                      <FormControlLabel
+                        key={role.id}
+                        control={
+                          <Checkbox
+                            checked={isChecked}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedRoleNames((prev) => [...prev, role.name]);
+                              } else {
+                                setSelectedRoleNames((prev) => prev.filter((r) => r !== role.name));
+                              }
+                            }}
+                          />
+                        }
+                        label={
+                          <Box>
+                            <Typography variant="body2" fontWeight={600}>
+                              {role.name}
+                            </Typography>
+                            {role.description && (
+                              <Typography variant="caption" color="text.secondary" display="block">
+                                {role.description}
+                              </Typography>
+                            )}
+                          </Box>
+                        }
+                      />
+                    );
+                  })}
+                </Box>
+              </Card>
+
+              {/* Direct Overrides Card */}
+              <Card variant="outlined" sx={{ p: 2.5, borderRadius: tokens.borderRadius.md }}>
+                <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 0.5 }}>
+                  Granular Permission Overrides
+                </Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 2 }}>
+                  Explicitly grant specific capabilities and scopes to this user on top of their roles
+                </Typography>
+
+                <Box
+                  sx={{
+                    display: "grid",
+                    gridTemplateColumns: { xs: "1fr", sm: "2fr 1fr auto" },
+                    gap: 1.5,
+                    alignItems: "center",
+                    mb: 2.5,
+                  }}
+                >
+                  <FormControl fullWidth size="small">
+                    <InputLabel>Select Permission</InputLabel>
+                    <Select
+                      value={overridePermId}
+                      label="Select Permission"
+                      onChange={(e) => setOverridePermId(e.target.value)}
+                    >
+                      {Object.entries(permissionCatalog).flatMap(([mod, perms]) =>
+                        perms.map((p) => (
+                          <MenuItem key={p.id} value={p.id}>
+                            [{mod}] {p.code || p.name} - {p.description || p.code || p.name}
+                          </MenuItem>
+                        ))
+                      )}
+                    </Select>
+                  </FormControl>
+
+                  <FormControl fullWidth size="small">
+                    <InputLabel>Access Scope</InputLabel>
+                    <Select
+                      value={overrideScope}
+                      label="Access Scope"
+                      onChange={(e) => setOverrideScope(e.target.value)}
+                    >
+                      <MenuItem value="ALL">ALL (Company Wide)</MenuItem>
+                      <MenuItem value="DEPARTMENT">DEPARTMENT (Departmental)</MenuItem>
+                      <MenuItem value="OWN">OWN (Self Only)</MenuItem>
+                    </Select>
+                  </FormControl>
+
+                  <Button
+                    variant="outlined"
+                    color="primary"
+                    disabled={!selectedEmpForPerms.userId || !overridePermId || savingOverride}
+                    onClick={handleAddOverride}
+                    sx={{ height: 40 }}
+                  >
+                    {savingOverride ? <CircularProgress size={16} /> : "Grant Override"}
+                  </Button>
+                </Box>
+
+                {/* Overrides Table */}
+                <TableContainer sx={{ border: `1px solid ${tokens.colors.secondary[200]}`, borderRadius: tokens.borderRadius.sm, maxHeight: 240, overflowX: "auto" }}>
+                  <Table size="small" stickyHeader>
+                    <TableHead>
+                      <TableRow>
+                        <TableCell sx={{ fontWeight: 700 }}>Permission</TableCell>
+                        <TableCell sx={{ fontWeight: 700 }}>Module</TableCell>
+                        <TableCell sx={{ fontWeight: 700 }}>Scope</TableCell>
+                        <TableCell sx={{ fontWeight: 700 }}>Status</TableCell>
+                        <TableCell align="right" sx={{ fontWeight: 700 }}>Action</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {userOverrides.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={5} align="center" sx={{ py: 3, color: "text.secondary" }}>
+                            No custom permission overrides defined. Roles govern access.
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        userOverrides.map((ov) => (
+                          <TableRow key={ov.id}>
+                            <TableCell sx={{ fontWeight: 600 }}>{ov.permission?.code || ov.permission?.name || `Perm #${ov.id}`}</TableCell>
+                            <TableCell>
+                              <Chip size="small" label={ov.permission?.module || "GENERAL"} variant="outlined" />
+                            </TableCell>
+                            <TableCell>
+                              <Chip
+                                size="small"
+                                label={ov.scope}
+                                color={ov.scope === "ALL" ? "primary" : ov.scope === "DEPARTMENT" ? "secondary" : "default"}
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <Chip size="small" label={ov.granted ? "GRANTED" : "REVOKED"} color={ov.granted ? "success" : "error"} />
+                            </TableCell>
+                            <TableCell align="right">
+                              <IconButton
+                                size="small"
+                                color="error"
+                                onClick={() => handleDeleteOverride(ov.permission?.id || ov.id)}
+                              >
+                                <DeleteIcon fontSize="small" />
+                              </IconButton>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </Card>
+            </Box>
+          ) : null}
+        </DialogContent>
+        <DialogActions sx={{ px: 3, py: 2 }}>
+          <Button onClick={() => setPermsModalOpen(false)} color="inherit">
+            Close
+          </Button>
+        </DialogActions>
       </Dialog>
 
       {/* ==================== GLOBAL NOTIFICATION SNACKBAR ==================== */}
