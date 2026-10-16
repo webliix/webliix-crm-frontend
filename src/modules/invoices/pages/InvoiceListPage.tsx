@@ -35,6 +35,7 @@ import PrintOutlinedIcon from "@mui/icons-material/PrintOutlined";
 import TablePagination from "@mui/material/TablePagination";
 import Divider from "@mui/material/Divider";
 import { tokens } from "@/theme/tokens";
+import { http } from "@/shared/services/http";
 import { invoiceApi, type InvoiceItem, type InvoiceDashboardData } from "../api/invoiceApi";
 import { customerService } from "@/modules/customers/services/customer.service";
 import { projectApi, type ProjectItem } from "@/modules/projects/api/projectApi";
@@ -54,6 +55,8 @@ export default function InvoiceListPage() {
   const [createDialogOpen, setCreateDialogOpen] = useState<boolean>(false);
   const [selectedCustomerId, setSelectedCustomerId] = useState<number | "">("");
   const [selectedProjectId, setSelectedProjectId] = useState<number | "">("");
+  const [selectedProjectBilling, setSelectedProjectBilling] = useState<any>(null);
+  const [loadingProjectBilling, setLoadingProjectBilling] = useState<boolean>(false);
   const [issueDate, setIssueDate] = useState<string>(new Date().toISOString().split("T")[0]);
   const [dueDate, setDueDate] = useState<string>("");
   const [invoiceItems, setInvoiceItems] = useState<{ itemName: string; description: string; quantity: number; unitPrice: number }[]>([
@@ -233,9 +236,18 @@ export default function InvoiceListPage() {
     loadData();
   }, [page, rowsPerPage]);
 
-  const fallbackTotalBilling = invoices.reduce((sum, i) => sum + (i.totalAmount || 0), 0);
-  const fallbackTotalPaid = invoices.reduce((sum, i) => sum + (i.paidAmount || 0), 0);
-  const fallbackTotalPending = invoices.reduce((sum, i) => sum + (i.pendingAmount || 0), 0);
+  const fallbackTotalBilling = invoices.reduce((sum, i) => sum + (Number(i.totalAmount) || 0), 0);
+  const fallbackTotalPaid = invoices.reduce((sum, i) => {
+    if (String(i.status).toUpperCase() === "PAID") return sum + (Number(i.paidAmount) || Number(i.totalAmount) || 0);
+    return sum + (Number(i.paidAmount) || 0);
+  }, 0);
+  const fallbackTotalPending = invoices.reduce((sum, i) => {
+    if (String(i.status).toUpperCase() === "PAID") return sum;
+    const pending = i.pendingAmount !== undefined && i.pendingAmount !== null
+      ? Number(i.pendingAmount)
+      : Math.max(0, (Number(i.totalAmount) || 0) - (Number(i.paidAmount) || 0));
+    return sum + (pending > 0 ? pending : 0);
+  }, 0);
 
   const totalBilling = dashboardStats && dashboardStats.totalAmount > 0
     ? dashboardStats.totalAmount
@@ -245,7 +257,7 @@ export default function InvoiceListPage() {
     ? dashboardStats.paidAmount
     : fallbackTotalPaid;
 
-  const totalPending = dashboardStats && (dashboardStats.pendingAmount > 0 || dashboardStats.totalAmount > 0)
+  const totalPending = dashboardStats && dashboardStats.pendingAmount !== undefined && dashboardStats.pendingAmount !== null
     ? dashboardStats.pendingAmount
     : fallbackTotalPending;
 
@@ -317,6 +329,37 @@ export default function InvoiceListPage() {
 
   const invoiceSubtotal = invoiceItems.reduce((acc, it) => acc + (Number(it.quantity) || 0) * (Number(it.unitPrice) || 0), 0);
   const invoiceTotal = Math.max(0, invoiceSubtotal + (Number(taxAmount) || 0) - (Number(discountAmount) || 0));
+
+  const handleProjectSelect = (projIdVal: string | number) => {
+    const pId = projIdVal ? Number(projIdVal) : "";
+    setSelectedProjectId(pId);
+    if (!pId) {
+      setSelectedProjectBilling(null);
+      return;
+    }
+    const proj = projects.find((p) => p.id === pId);
+    if (proj) {
+      const cId = proj.customerId || proj.customer?.id;
+      if (cId && !selectedCustomerId) {
+        setSelectedCustomerId(cId);
+      }
+      if (invoiceItems.length === 1 && (Number(invoiceItems[0].unitPrice) || 0) === 0) {
+        setInvoiceItems([
+          {
+            itemName: `${proj.projectName} — Milestone Deliverables`,
+            description: proj.description || `Milestone deliverables, engineering work, and deployment for ${proj.projectName} (${proj.projectCode}).`,
+            quantity: 1,
+            unitPrice: proj.budget ? Math.round(proj.budget * 0.5) : 0,
+          },
+        ]);
+      }
+      setLoadingProjectBilling(true);
+      http.get(`/api/v1/projects/${pId}/billing`)
+        .then((res: any) => setSelectedProjectBilling(res.data?.data || null))
+        .catch(() => setSelectedProjectBilling(null))
+        .finally(() => setLoadingProjectBilling(false));
+    }
+  };
 
   const handleCreateInvoiceSubmit = async () => {
     if (!selectedCustomerId) {
@@ -666,7 +709,7 @@ export default function InvoiceListPage() {
               fullWidth
               size="small"
               value={selectedProjectId}
-              onChange={(e) => setSelectedProjectId(e.target.value ? Number(e.target.value) : "")}
+              onChange={(e) => handleProjectSelect(e.target.value)}
             >
               <MenuItem value="">None / General Billing</MenuItem>
               {availableProjects.map((p) => (
@@ -676,6 +719,59 @@ export default function InvoiceListPage() {
               ))}
             </TextField>
           </Box>
+
+          {/* Project Billing & Contract Info Snapshot */}
+          {Boolean(selectedProjectId) && (
+            <Box
+              sx={{
+                p: 2,
+                borderRadius: `${tokens.borderRadius.md}px`,
+                bgcolor: "#f8fafc",
+                border: "1px solid #cbd5e1",
+                display: "flex",
+                flexDirection: "column",
+                gap: 1.5,
+              }}
+            >
+              <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 1 }}>
+                <Typography variant="subtitle2" fontWeight={800} color={tokens.colors.primary[700]}>
+                  Project Billing Context: {projects.find((p) => p.id === Number(selectedProjectId))?.projectName} {loadingProjectBilling ? "(Loading...)" : ""}
+                </Typography>
+                <Chip
+                  label={projects.find((p) => p.id === Number(selectedProjectId))?.status || "IN_PROGRESS"}
+                  size="small"
+                  color="primary"
+                  sx={{ fontWeight: 700, fontSize: "0.72rem" }}
+                />
+              </Box>
+              <Box sx={{ display: "grid", gridTemplateColumns: { xs: "repeat(2, 1fr)", sm: "repeat(4, 1fr)" }, gap: 1.5, textAlign: "center" }}>
+                <Box sx={{ p: 1, bgcolor: "#ffffff", borderRadius: 1, border: "1px solid #e2e8f0" }}>
+                  <Typography variant="caption" color="text.secondary" fontWeight={700}>CONTRACT BUDGET</Typography>
+                  <Typography variant="body2" fontWeight={800}>
+                    ₹{(selectedProjectBilling?.budget ?? projects.find((p) => p.id === Number(selectedProjectId))?.budget ?? 0).toLocaleString()}
+                  </Typography>
+                </Box>
+                <Box sx={{ p: 1, bgcolor: "#ffffff", borderRadius: 1, border: "1px solid #e2e8f0" }}>
+                  <Typography variant="caption" color="text.secondary" fontWeight={700}>TOTAL BILLED</Typography>
+                  <Typography variant="body2" fontWeight={800} color={tokens.colors.primary.main}>
+                    ₹{(selectedProjectBilling?.totalBilled || 0).toLocaleString()}
+                  </Typography>
+                </Box>
+                <Box sx={{ p: 1, bgcolor: "#ffffff", borderRadius: 1, border: "1px solid #e2e8f0" }}>
+                  <Typography variant="caption" color="text.secondary" fontWeight={700}>TOTAL PAID</Typography>
+                  <Typography variant="body2" fontWeight={800} color={tokens.colors.success[700]}>
+                    ₹{(selectedProjectBilling?.totalPaid || 0).toLocaleString()}
+                  </Typography>
+                </Box>
+                <Box sx={{ p: 1, bgcolor: "#ffffff", borderRadius: 1, border: "1px solid #e2e8f0" }}>
+                  <Typography variant="caption" color="text.secondary" fontWeight={700}>UNBILLED BALANCE</Typography>
+                  <Typography variant="body2" fontWeight={800} color={tokens.colors.warning[700]}>
+                    ₹{(selectedProjectBilling?.unbilledContractAmount ?? Math.max(0, (projects.find((p) => p.id === Number(selectedProjectId))?.budget || 0) - (selectedProjectBilling?.totalBilled || 0))).toLocaleString()}
+                  </Typography>
+                </Box>
+              </Box>
+            </Box>
+          )}
 
           <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" }, gap: 2 }}>
             <TextField

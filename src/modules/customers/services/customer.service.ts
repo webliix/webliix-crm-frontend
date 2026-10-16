@@ -78,4 +78,11 @@ export const customerService = {
     const res = await http.post(`/api/v1/customers/${customerId}/notes`, note);
     return res.data?.data;
   },
+
+  async sendEmail(
+    customerId: number,
+    payload: { subject: string; message: string; recipientEmail?: string }
+  ): Promise<void> {
+    await http.post(`/api/v1/customers/${customerId}/send-email`, payload);
+  },
 };

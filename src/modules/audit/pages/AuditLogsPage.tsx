@@ -22,6 +22,9 @@ import ShieldOutlinedIcon from "@mui/icons-material/ShieldOutlined";
 import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
 import LoginIcon from "@mui/icons-material/Login";
 import FileDownloadOutlinedIcon from "@mui/icons-material/FileDownloadOutlined";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import IconButton from "@mui/material/IconButton";
+import Tooltip from "@mui/material/Tooltip";
 import { PageLayout } from "@/shared/components/ui/layout";
 import { BrandLoader } from "@/shared/components/ui/feedback/BrandLoader";
 import { tokens } from "@/theme/tokens";
@@ -96,7 +99,7 @@ export default function AuditLogsPage() {
         module: moduleFilter !== "ALL" ? moduleFilter : null,
         action: actionFilter !== "ALL" ? actionFilter : null,
         status: statusFilter !== "ALL" ? statusFilter : null,
-        entityType: searchQuery.trim() ? searchQuery.trim() : null,
+        keyword: searchQuery.trim() ? searchQuery.trim() : null,
       };
 
       const res = await http.post("/api/v1/audit/logs", payload);
@@ -107,7 +110,7 @@ export default function AuditLogsPage() {
         setTotalElements(data.length);
       } else if (data?.content) {
         setLogs(data.content);
-        setTotalElements(data.totalElements ?? data.content.length);
+        setTotalElements(Number(data.totalElements) ?? data.content.length);
       } else {
         setLogs([]);
         setTotalElements(0);
@@ -119,6 +122,28 @@ export default function AuditLogsPage() {
       setLoading(false);
     }
   }, [page, size, moduleFilter, actionFilter, statusFilter, searchQuery]);
+
+  const handleDeleteLog = async (id: number) => {
+    if (!window.confirm("Are you sure you want to delete this audit record?")) return;
+    try {
+      await http.delete(`/api/v1/audit/logs/${id}`);
+      fetchLogs();
+      fetchStats();
+    } catch {
+      alert("Failed to delete audit log. Super Admin access required.");
+    }
+  };
+
+  const handleClearLogs = async () => {
+    if (!window.confirm("WARNING: Are you sure you want to permanently clear all audit logs?")) return;
+    try {
+      await http.delete("/api/v1/audit/logs");
+      fetchLogs();
+      fetchStats();
+    } catch {
+      alert("Failed to clear audit logs. Super Admin access required.");
+    }
+  };
 
   useEffect(() => {
     fetchStats();
@@ -143,17 +168,28 @@ export default function AuditLogsPage() {
       title="System Audit & Security Logs"
       subtitle="Track security events, user access, administrative actions, and data modifications"
       actions={
-        <Button
-          variant="outlined"
-          startIcon={<RefreshIcon />}
-          onClick={() => {
-            fetchStats();
-            fetchLogs();
-          }}
-          sx={{ fontWeight: 700 }}
-        >
-          Refresh Logs
-        </Button>
+        <Box sx={{ display: "flex", gap: 1.5 }}>
+          <Button
+            variant="outlined"
+            startIcon={<RefreshIcon />}
+            onClick={() => {
+              fetchStats();
+              fetchLogs();
+            }}
+            sx={{ fontWeight: 700 }}
+          >
+            Refresh Logs
+          </Button>
+          <Button
+            variant="outlined"
+            color="error"
+            startIcon={<DeleteOutlineIcon />}
+            onClick={handleClearLogs}
+            sx={{ fontWeight: 700 }}
+          >
+            Clear History
+          </Button>
+        </Box>
       }
     >
       {/* Metric Stat Cards */}
@@ -356,6 +392,7 @@ export default function AuditLogsPage() {
                   <TableCell sx={{ fontWeight: 700 }}>Entity</TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>IP Address</TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>Status</TableCell>
+                  <TableCell sx={{ fontWeight: 700, textAlign: "right" }}>Actions</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -402,6 +439,18 @@ export default function AuditLogsPage() {
                         color={String(l.status).toUpperCase() === "SUCCESS" ? "success" : "error"}
                         sx={{ fontWeight: 700, fontSize: "0.72rem" }}
                       />
+                    </TableCell>
+                    <TableCell sx={{ textAlign: "right" }}>
+                      <Tooltip title="Delete record (Super Admin)">
+                        <IconButton
+                          size="small"
+                          color="error"
+                          onClick={() => handleDeleteLog(l.id)}
+                          sx={{ p: 0.5 }}
+                        >
+                          <DeleteOutlineIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
                     </TableCell>
                   </TableRow>
                 ))}

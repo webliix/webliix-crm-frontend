@@ -4,6 +4,7 @@ import Typography from "@mui/material/Typography";
 import InputAdornment from "@mui/material/InputAdornment";
 import SearchIcon from "@mui/icons-material/Search";
 import WhatsAppIcon from "@mui/icons-material/WhatsApp";
+import EmailOutlinedIcon from "@mui/icons-material/EmailOutlined";
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import FolderSharedOutlinedIcon from "@mui/icons-material/FolderSharedOutlined";
 import { AppDataTable, type DataTableColumn } from "@/shared/components/ui/table/AppDataTable";
@@ -13,6 +14,8 @@ import { AppButton } from "@/shared/components/ui/button";
 import { formatCurrency, formatDate } from "@/shared/utils/formatters";
 import { tokens } from "@/theme/tokens";
 import type { CustomerResponse } from "../types/customer.types";
+import { SendCustomerEmailDialog } from "./SendCustomerEmailDialog";
+
 
 interface CustomerTableProps {
   customers: CustomerResponse[];
@@ -27,6 +30,7 @@ export function CustomerTable({
 }: CustomerTableProps) {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"ALL" | "ACTIVE" | "INACTIVE">("ALL");
+  const [emailTargetCustomer, setEmailTargetCustomer] = useState<CustomerResponse | null>(null);
 
   const filteredCustomers = useMemo(() => {
     return customers
@@ -155,6 +159,20 @@ export function CustomerTable({
             </AppButton>
           )}
 
+          {row.email && (
+            <AppButton
+              appVariant="secondary"
+              appSize="sm"
+              startIcon={<EmailOutlinedIcon sx={{ fontSize: 16 }} />}
+              onClick={(e) => {
+                e.stopPropagation();
+                setEmailTargetCustomer(row);
+              }}
+            >
+              Email
+            </AppButton>
+          )}
+
           <AppButton
             appVariant="outlined"
             appSize="sm"
@@ -237,6 +255,13 @@ export function CustomerTable({
           totalRows={filteredCustomers.length}
         />
       )}
+
+      {/* Direct Client Email Dialog */}
+      <SendCustomerEmailDialog
+        open={Boolean(emailTargetCustomer)}
+        onClose={() => setEmailTargetCustomer(null)}
+        customer={emailTargetCustomer}
+      />
     </Box>
   );
 }

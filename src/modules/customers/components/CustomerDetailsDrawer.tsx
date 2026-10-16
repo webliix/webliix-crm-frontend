@@ -25,6 +25,7 @@ import type { StoredDocument } from "@/modules/documents/types/document.types";
 import { ticketService } from "@/modules/tickets/services/ticket.service";
 import type { TicketResponse } from "@/modules/tickets/types/ticket.types";
 import { TicketDetailsDrawer, TicketCreateDrawer } from "@/modules/tickets/components";
+import { SendCustomerEmailDialog } from "./SendCustomerEmailDialog";
 import {
   useCustomerDetails,
   useCustomerProjects,
@@ -68,6 +69,7 @@ export function CustomerDetailsDrawer({
   const [selectedTicketId, setSelectedTicketId] = useState<number | null>(null);
   const [ticketDetailsOpen, setTicketDetailsOpen] = useState(false);
   const [ticketCreateOpen, setTicketCreateOpen] = useState(false);
+  const [emailDialogOpen, setEmailDialogOpen] = useState(false);
 
   // Mutations
   const deleteMutation = useDeleteCustomer();
@@ -116,8 +118,7 @@ export function CustomerDetailsDrawer({
   };
 
   const handleEmail = () => {
-    if (!customer?.email) return;
-    window.location.href = `mailto:${customer.email}?subject=Webliix%20Account%20Updates`;
+    setEmailDialogOpen(true);
   };
 
   const handleDelete = () => {
@@ -823,6 +824,13 @@ export function CustomerDetailsDrawer({
           setSelectedTicketId(null);
           loadDocumentsAndTickets();
         }}
+      />
+
+      {/* Direct Customer Email Dialog */}
+      <SendCustomerEmailDialog
+        open={emailDialogOpen}
+        onClose={() => setEmailDialogOpen(false)}
+        customer={customer}
       />
     </>
   );

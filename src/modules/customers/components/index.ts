@@ -3,3 +3,5 @@ export * from "./CustomerTable";
 export * from "./CustomerDetailsDrawer";
 export * from "./CustomerCreateDrawer";
 export * from "./CustomerEditDrawer";
+export * from "./SendCustomerEmailDialog";
+
