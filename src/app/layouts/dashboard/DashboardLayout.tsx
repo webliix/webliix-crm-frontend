@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from "react";
 import Box from "@mui/material/Box";
+import { layout } from "@/shared/constants/layout";
 import { DashboardHeader } from "./DashboardHeader";
 import { DashboardSidebar } from "./DashboardSidebar";
 import { DashboardFooter } from "./DashboardFooter";
@@ -26,11 +27,12 @@ export function DashboardLayout({ children }: Props) {
           flexDirection: "column",
           minWidth: 0,
           overflowX: "hidden",
+          ml: { xs: 0, md: `${layout.sidebarWidth}px` },
         }}
       >
         <DashboardHeader onMenuClick={handleDrawerToggle} />
 
-        <Box component="main" sx={{ flex: 1, display: "flex", flexDirection: "column" }}>
+        <Box component="main" sx={{ flex: 1, display: "flex", flexDirection: "column", pt: `${layout.headerHeight}px` }}>
           {children}
         </Box>
 

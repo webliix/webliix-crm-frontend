@@ -130,13 +130,14 @@ export function DashboardSidebar({ mobileOpen = false, onMobileClose }: Dashboar
           display: { xs: "none", md: "block" },
           width: layout.sidebarWidth,
           height: "100vh",
-          position: "sticky",
+          position: "fixed",
           top: 0,
           left: 0,
+          bottom: 0,
           borderRight: `1px solid ${tokens.colors.secondary[200]}`,
           bgcolor: "#ffffff",
           flexShrink: 0,
-          zIndex: 1000,
+          zIndex: 1200,
           overflowY: "auto",
         }}
       >

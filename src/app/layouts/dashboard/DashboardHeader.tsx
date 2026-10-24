@@ -73,8 +73,10 @@ export function DashboardHeader({ onMenuClick }: DashboardHeaderProps) {
         bgcolor: "rgba(255, 255, 255, 0.95)",
         backdropFilter: "blur(12px)",
         borderBottom: `1px solid ${tokens.colors.secondary[200]}`,
-        position: "sticky",
+        position: "fixed",
         top: 0,
+        right: 0,
+        left: { xs: 0, md: `${layout.sidebarWidth}px` },
         zIndex: 1100,
         boxShadow: "0 1px 4px 0 rgba(0, 0, 0, 0.03)",
       }}
