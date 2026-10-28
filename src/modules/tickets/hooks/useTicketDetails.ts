@@ -16,7 +16,7 @@ export function useTicketComments(ticketId: number | null) {
     queryKey: ["tickets", "comments", ticketId],
     queryFn: () => (ticketId ? ticketService.getComments(ticketId) : []),
     enabled: !!ticketId,
-    refetchInterval: 15000, // Relaxed fallback polling (WebSocket pushes real-time)
+    refetchInterval: false,
     refetchIntervalInBackground: false,
     refetchOnWindowFocus: true,
   });
