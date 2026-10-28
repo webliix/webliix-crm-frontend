@@ -200,7 +200,7 @@ export function DashboardHeader({ onMenuClick }: DashboardHeaderProps) {
                   {userName}
                 </Typography>
                 <Typography variant="caption" color="text.secondary" display="block">
-                  {user?.email || "admin@webliix.in"}
+                  {user?.email || "admin@webliix.com"}
                 </Typography>
                 <Box sx={{ mt: 1 }}>
                   <AppStatusChip status={userRole} statusType="info" sx={{ height: 20, fontSize: "0.6875rem" }} />

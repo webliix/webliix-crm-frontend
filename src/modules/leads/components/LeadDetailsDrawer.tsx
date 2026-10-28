@@ -72,7 +72,7 @@ export function LeadDetailsDrawer({ id, open, onClose }: Props) {
     if (!lead?.email) return;
     const subject = encodeURIComponent(`Webliix Solutions – Regarding your project inquiry`);
     const body = encodeURIComponent(
-      `Hello ${lead.contactPerson || lead.companyName || ""},\n\nThank you for reaching out to Webliix regarding:\n"${lead.requirements || ""}"\n\nOur solutions team is reviewing your project details. When would be a good time for a quick 15-minute discovery call to discuss your exact requirements?\n\nBest regards,\nWebliix Team\nhttps://webliix.in`
+      `Hello ${lead.contactPerson || lead.companyName || ""},\n\nThank you for reaching out to Webliix regarding:\n"${lead.requirements || ""}"\n\nOur solutions team is reviewing your project details. When would be a good time for a quick 15-minute discovery call to discuss your exact requirements?\n\nBest regards,\nWebliix Team\nhttps://webliix.com`
     );
     window.location.href = `mailto:${lead.email}?subject=${subject}&body=${body}`;
   };
