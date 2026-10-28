@@ -520,8 +520,8 @@ export default function SettingsPage() {
                         {plans.map((p) => (
                           <TableRow key={p.id} hover>
                             <TableCell sx={{ fontWeight: 700 }}>{p.name}</TableCell>
-                            <TableCell>${p.pricePerMonth || 0}/mo</TableCell>
-                            <TableCell>${p.pricePerYear || 0}/yr</TableCell>
+                            <TableCell>₹{p.pricePerMonth || 0}/mo</TableCell>
+                            <TableCell>₹{p.pricePerYear || 0}/yr</TableCell>
                             <TableCell>{p.maxUsers ? `${p.maxUsers} Users` : "Unlimited"}</TableCell>
                             <TableCell>{p.maxStorageGb} GB</TableCell>
                             <TableCell>

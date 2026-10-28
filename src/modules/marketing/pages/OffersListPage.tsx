@@ -401,7 +401,7 @@ export default function OffersListPage() {
                 label="Discount / Perk"
                 fullWidth
                 required
-                placeholder="e.g., 25% OFF or $1,200 Credit"
+                placeholder="e.g., 25% OFF or ₹10,000 Credit"
                 value={discount}
                 onChange={(e) => setDiscount(e.target.value)}
               />

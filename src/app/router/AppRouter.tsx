@@ -22,6 +22,7 @@ import InvoiceListPage from "@/modules/invoices/pages/InvoiceListPage";
 import AutomationsListPage from "@/modules/automations/pages/AutomationsListPage";
 import PayrollListPage from "@/modules/hr/pages/PayrollListPage";
 import EmployeeListPage from "@/modules/hr/pages/EmployeeListPage";
+import JobsManagementPage from "@/modules/hr/pages/JobsManagementPage";
 import ExpenseListPage from "@/modules/expenses/pages/ExpenseListPage";
 import ReportsPage from "@/modules/reports/pages/ReportsPage";
 import AuditLogsPage from "@/modules/audit/pages/AuditLogsPage";
@@ -272,6 +273,18 @@ export function AppRouter() {
               <DashboardLayout>
                 <PageGuard permission={routeAccess["/payroll"]}>
                   <PayrollListPage />
+                </PageGuard>
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/jobs"
+          element={
+            <ProtectedRoute>
+              <DashboardLayout>
+                <PageGuard permission={routeAccess["/jobs"]}>
+                  <JobsManagementPage />
                 </PageGuard>
               </DashboardLayout>
             </ProtectedRoute>

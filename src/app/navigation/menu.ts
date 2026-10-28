@@ -12,6 +12,7 @@ export const menuItems: NavigationItem[] = [
   menuAccess.tickets,
   menuAccess.employees,
   menuAccess.payroll,
+  menuAccess.jobs,
   menuAccess.expenses,
   menuAccess.reports,
   menuAccess.automations,

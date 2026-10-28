@@ -109,6 +109,12 @@ export const menuAccess = {
     path: "/offers",
     permission: permissions.dashboard.view,
   },
+  jobs: {
+    id: "jobs",
+    label: "Careers & Jobs",
+    path: "/jobs",
+    permission: permissions.jobs.view,
+  },
   settings: {
     id: "settings",
     label: "Settings",

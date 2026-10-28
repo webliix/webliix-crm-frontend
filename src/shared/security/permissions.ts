@@ -85,6 +85,10 @@ export const permissions = {
     create: "REPORTS_VIEW",
     edit: "REPORTS_VIEW",
   },
+  jobs: {
+    view: "JOBS_VIEW",
+    manage: "JOBS_MANAGE",
+  },
 } as const;
 
 export type Permissions = typeof permissions;
