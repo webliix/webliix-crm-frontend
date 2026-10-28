@@ -1,10 +1,11 @@
+import { useCallback } from "react";
 import { useAppSelector } from "@/shared/hooks/redux";
 import { selectUser } from "@/modules/auth/store/selectors";
 
 export function usePermission() {
   const user = useAppSelector(selectUser);
 
-  const hasPermission = (permission?: string) => {
+  const hasPermission = useCallback((permission?: string) => {
     if (!permission) return true;
     if (!user) return false;
 
@@ -17,7 +18,7 @@ export function usePermission() {
     }
 
     return Boolean(user.permissions?.includes(permission));
-  };
+  }, [user]);
 
   return { hasPermission, permissions: user?.permissions ?? [] };
 }

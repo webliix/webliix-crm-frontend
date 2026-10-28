@@ -65,7 +65,7 @@ export function WebsiteHelpWidget() {
 
   const createPublicTicketMutation = useCreatePublicTicket();
   const { data: ticketDetails, refetch: refetchTicket } = usePublicTicketDetails(
-    viewMode === "CHAT" ? activeTicketNumber : null
+    isOpen && viewMode === "CHAT" ? activeTicketNumber : null
   );
   const addPublicCommentMutation = useAddPublicComment();
 

@@ -8,7 +8,13 @@ export function usePublicTicketDetails(ticketNumber: string | null) {
     queryKey: ["public-ticket", ticketNumber],
     queryFn: () => (ticketNumber ? ticketService.getPublicTicket(ticketNumber) : null),
     enabled: !!ticketNumber,
-    refetchInterval: 8000, // Poll active customer chat every 8s
+    refetchInterval: (query) => {
+      const status = query.state.data?.status;
+      if (status === "RESOLVED" || status === "CLOSED") return false;
+      return 15000; // Relaxed 15s poll only when chat is open and active
+    },
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: true,
   });
 }
 

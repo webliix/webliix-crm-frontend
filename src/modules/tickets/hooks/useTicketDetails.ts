@@ -6,7 +6,8 @@ export function useTicketDetails(ticketId: number | null) {
     queryKey: ["tickets", "detail", ticketId],
     queryFn: () => (ticketId ? ticketService.getTicket(ticketId) : null),
     enabled: !!ticketId,
-    refetchInterval: 5000,
+    refetchInterval: false,
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -15,6 +16,8 @@ export function useTicketComments(ticketId: number | null) {
     queryKey: ["tickets", "comments", ticketId],
     queryFn: () => (ticketId ? ticketService.getComments(ticketId) : []),
     enabled: !!ticketId,
-    refetchInterval: 2500, // Live real-time chat polling
+    refetchInterval: 15000, // Relaxed fallback polling (WebSocket pushes real-time)
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: true,
   });
 }
